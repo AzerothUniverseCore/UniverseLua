@@ -1,0 +1,117 @@
+local jobLib = {};
+
+jobLib.Errors = {
+  ['Error_1'] = 'Vous connaissez déjà trop de métiers',
+};
+
+jobLib.Skill = {
+  ['Alchemy'] = 171,
+  ['Cooking'] = 185,
+  ['Inscription'] = 773,
+  ['Tailoring'] = 197,
+  ['Enchanting'] = 333,
+  ['Blacksmithing'] = 164,
+  ['Engineering'] = 202,
+  ['Firstaid'] = 129,
+  ['Fishing'] = 356,
+  ['Jewelcrafting'] = 755,
+  ['Leatherworking'] = 165,
+  ['Skinning'] = 393,
+  ['Herbalism'] = 182,
+  ['Mining'] = 186,
+  ['Recycling'] = 807,
+};
+
+jobLib.Spells = {
+  [171] = {2259, 3101, 3464, 11611, 28596, 51304},
+  [185] = {2550, 3102, 3413, 18260},
+  [773] = {45357, 45358, 45359, 45360, 45361, 45363},
+  [197] = {3908, 3909, 3910, 12180, 26790, 51309},
+  [333] = {7411, 7412, 7413, 13920, 28029, 51313},
+  [164] = {2018, 3100, 3538, 9785, 29844, 51300},
+  [202] = {4036, 4037, 4038, 12656, 30350, 51306},
+  [129] = {3273, 3274, 7924, 10846},
+  [356] = {7620, 7731, 7732, 18248},
+  [755] = {25229, 25230, 28894, 28895, 28897, 51311},
+  [165] = {2108, 3104, 3811, 10662, 32549, 51302},
+
+  [393] = {8613, 8617, 8618, 10768, 32678, 50305},
+  [182] = {2366, 2368, 3570, 11993, 28695, 50300},
+  [186] = {2575, 2576, 3564, 10248, 29354, 50310},
+  [807] = {338050, 338052, 338054, 338056, 338058, 338060},
+};
+
+-- Création d'une nouvelle table pour le joueur
+function jobLib.createTable(player)
+  local pGuid = player:GetGUIDLow();
+  jobLib[pGuid] = {};
+  jobLib[pGuid].count = 0;
+
+  return jobLib[pGuid];
+end
+
+-- Nous comptons le nombre de métiers qu'il posséde
+function jobLib.countJob(player)
+  local pGuid = player:GetGUIDLow();
+
+  jobLib.createTable(player);
+
+  for key, value in pairs(jobLib.Skill) do
+    if (player:HasSkill(value)) then
+      jobLib[pGuid].count = jobLib[pGuid].count + 1;
+    end
+  end
+end
+
+-- Nous vérifions qu'il ne posséde pas déjà le métier
+function jobLib.getJob(player, job)
+  if (job ~= nil) then
+    for key, value in pairs(jobLib.Skill) do
+      if (job == key) then
+        if (player:HasSkill(value)) then
+          return true;
+        else
+          return false;
+        end
+      end
+    end
+  end
+end
+
+-- ////////// Function principal \\\\\\\\\\
+--
+--  jobLib.learnJob(player, job) Job est un text
+--
+-- Nous apprenons le métiers demandés après toutes les vérifications
+-- Si le nombre de métiers appris est inférieur à 2
+-- Si il ne connais pas déjà le métier
+--
+function jobLib.learnJob(player, job)
+  local pGuid = player:GetGUIDLow();
+
+  jobLib.countJob(player);
+  jobLib.getJob(player);
+
+  if (jobLib.getJob(player, job) == false)then
+    if (jobLib[pGuid].count < 11 )then
+      for key, value in pairs(jobLib.Skill) do
+        if (job == key) then
+          for skill, spells in pairs(jobLib.Spells) do
+            if (value == skill) then
+              for i, spell in pairs(spells) do
+                player:LearnSpell(spell);
+              end
+              player:SetSkill(value, 450, player:GetSkillValue(value), player:GetMaxSkillValue(value));
+              return true;
+            end
+          end
+        end
+      end
+    else
+      player:SendNotification(jobLib.Errors['Error_1']);
+    end
+  end
+end
+
+
+return jobLib;

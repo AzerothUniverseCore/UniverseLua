@@ -1,0 +1,311 @@
+local AIO = AIO or require("AIO")
+if AIO.AddAddon() then
+    return
+end
+
+local HeirloomHandlers = AIO.AddHandlers("HeirloomClient", {})
+
+function HeirloomHandlers.ShowHeirloomClient(player)
+    frameHeirloomClient:Show()
+end
+
+-- Gestion des erreurs renvoyées par le serveur
+function HeirloomHandlers.ShowError(player, errorType)
+    if errorType == "no_currency" then
+        UIErrorsFrame:AddMessage("|cffff0000Vous n'avez pas l'item requis pour acheter un héritage.|r", 1, 0, 0)
+    elseif errorType == "bag_full" then
+        UIErrorsFrame:AddMessage("|cffff0000Impossible d'ajouter l'item. Pas assez de place dans vos sacs.|r", 1, 0, 0)
+    end
+end
+
+local CURRENCY_ITEM_ID = 43228  -- Item monnaie requis
+local CURRENCY_COST = 50        -- Coût en Eclats par héritage
+local CURRENCY_ICON = "Interface\\Icons\\inv_misc_platnumdisks"  -- Icône de l'Eclat du gardien des pierres
+
+-- Sons personnalisés
+local OPEN_TALENT_WINDOW_SOUND = "Sound\\TalentsSystem\\ui_72_artifact_forge_final_trait_unlocked.ogg"
+local CLOSE_TALENT_WINDOW_SOUND = "Sound\\TalentsSystem\\ui_72_artifact_forge_trait_refund_end.ogg"
+local SPELL_TALENT_WINDOW_SOUND = "Sound\\TalentsSystem\\ui_80_azeritearmor_rotationends_02.ogg"
+
+-- Dimensions et apparence de la fenêtre principale
+local frameHeirloomClient = CreateFrame("Frame", "frameHeirloomClient", UIParent)
+frameHeirloomClient:SetSize(1200, 650)
+frameHeirloomClient:SetFrameStrata("DIALOG")
+frameHeirloomClient:SetMovable(false)
+frameHeirloomClient:EnableMouse(true)
+frameHeirloomClient:RegisterForDrag("LeftButton")
+frameHeirloomClient:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+frameHeirloomClient:SetFrameLevel(100)
+frameHeirloomClient:SetBackdrop({
+    bgFile = "interface/heirloomUI/HeirloomUITemplate",
+    edgeSize = 20,
+    insets = { left = 5, right = 5, top = 5, bottom = 5 }
+})
+frameHeirloomClient:SetBackdropBorderColor(253, 197, 184)
+frameHeirloomClient:SetScript("OnDragStart", frameHeirloomClient.StartMoving)
+frameHeirloomClient:SetScript("OnDragStop", frameHeirloomClient.StopMovingOrSizing)
+frameHeirloomClient:Hide()
+tinsert(UISpecialFrames, "frameHeirloomClient")
+
+-- Son de fermeture dans tous les cas (bouton, Echap, bouton CharacterFrame)
+frameHeirloomClient:SetScript("OnHide", function()
+    PlaySoundFile(CLOSE_TALENT_WINDOW_SOUND)
+end)
+
+-- Bouton de fermeture
+local buttonHeirloomClientClose = CreateFrame("Button", "buttonHeirloomClientClose", frameHeirloomClient, "UIPanelCloseButton")
+buttonHeirloomClientClose:SetPoint("TOPLEFT", frameHeirloomClient, "TOPLEFT", 880, -110)
+buttonHeirloomClientClose:SetSize(24, 24)
+buttonHeirloomClientClose:SetScript("OnClick", function()
+    frameHeirloomClient:Hide()
+end)
+
+-- Titre de la fenêtre
+local frameHeirloomClientTitleBar = CreateFrame("Frame", "frameHeirloomClientTitleBar", frameHeirloomClient, nil)
+frameHeirloomClientTitleBar:SetSize(190, 5)
+frameHeirloomClientTitleBar:SetPoint("TOP", frameHeirloomClient, "TOP", -45, -110)
+local fontHeirloomClientTitleText = frameHeirloomClientTitleBar:CreateFontString("fontHeirloomClientTitleText")
+fontHeirloomClientTitleText:SetFont("Fonts\\FRIZQT__.TTF", 13)
+fontHeirloomClientTitleText:SetText("|cff000000Héritage|r")
+fontHeirloomClientTitleText:SetPoint("CENTER", frameHeirloomClientTitleBar, "CENTER", 0, 0)
+
+-- Affichage de la monnaie (icône + compteur) dans la fenêtre
+local currencyFrame = CreateFrame("Frame", "HeirloomCurrencyFrame", frameHeirloomClient)
+currencyFrame:SetSize(160, 36)
+currencyFrame:SetPoint("TOPLEFT", frameHeirloomClient, "TOPLEFT", 295, -115)
+
+-- Icône de la monnaie
+local currencyIcon = currencyFrame:CreateTexture(nil, "ARTWORK")
+currencyIcon:SetSize(28, 28)
+currencyIcon:SetPoint("LEFT", currencyFrame, "LEFT", 420, -320)
+currencyIcon:SetTexture(CURRENCY_ICON)
+
+-- Texte du compteur
+local currencyText = currencyFrame:CreateFontString(nil, "OVERLAY")
+currencyText:SetFont("Fonts\\FRIZQT__.TTF", 13, "OUTLINE")
+currencyText:SetPoint("LEFT", currencyIcon, "RIGHT", 6, 0)
+
+-- Mise à jour du compteur
+local function UpdateCurrencyDisplay()
+    local count = GetItemCount(CURRENCY_ITEM_ID)
+    if count and count > 0 then
+        currencyText:SetText("|cffffd700" .. count .. "\n Eclat du gardien|r")
+    else
+        currencyText:SetText("|cffff4444Aucun\nEclat du gardien|r")
+    end
+end
+
+-- Rafraîchissement à l'ouverture et sur événements sac
+frameHeirloomClient:SetScript("OnShow", UpdateCurrencyDisplay)
+frameHeirloomClient:HookScript("OnShow", UpdateCurrencyDisplay)
+
+local bagUpdateFrame = CreateFrame("Frame")
+bagUpdateFrame:RegisterEvent("BAG_UPDATE")
+bagUpdateFrame:SetScript("OnEvent", function()
+    if frameHeirloomClient:IsShown() then
+        UpdateCurrencyDisplay()
+    end
+end)
+
+-- Liste des items hérités avec chemins d'icônes
+local heirloomItems = {
+    {id = 42943, icon = "Interface\\Icons\\inv_axe_09"},
+    {id = 42944, icon = "Interface\\Icons\\inv_sword_17"},
+    {id = 42945, icon = "Interface\\Icons\\inv_sword_43"},
+    {id = 42946, icon = "Interface\\Icons\\inv_weapon_bow_08"},
+    {id = 42947, icon = "Interface\\Icons\\inv_jewelry_talisman_12"},
+    {id = 42948, icon = "Interface\\Icons\\inv_hammer_05"},
+    {id = 42949, icon = "Interface\\Icons\\inv_shoulder_30"},
+    {id = 42950, icon = "Interface\\Icons\\inv_shoulder_01"},
+    {id = 42951, icon = "Interface\\Icons\\inv_shoulder_29"},
+    {id = 42952, icon = "Interface\\Icons\\inv_shoulder_07"},
+    {id = 42984, icon = "Interface\\Icons\\inv_shoulder_06"},
+    {id = 42985, icon = "Interface\\Icons\\inv_misc_bone_taurenskull_01"},
+    {id = 42991, icon = "Interface\\Icons\\inv_jewelry_talisman_01"},
+    {id = 42992, icon = "Interface\\Icons\\inv_jewelry_talisman_08"},
+    {id = 44091, icon = "Interface\\Icons\\inv_weapon_shortblade_03"},
+    {id = 44092, icon = "Interface\\Icons\\inv_sword_19"},
+    {id = 44093, icon = "Interface\\Icons\\inv_weapon_rifle_09"},
+    {id = 44094, icon = "Interface\\Icons\\inv_hammer_07"},
+    {id = 44095, icon = "Interface\\Icons\\inv_staff_13"},
+    {id = 44096, icon = "Interface\\Icons\\inv_sword_36"},
+    {id = 44097, icon = "Interface\\Icons\\inv_jewelry_trinketpvp_02"},
+    {id = 44098, icon = "Interface\\Icons\\inv_jewelry_trinketpvp_01"},
+    {id = 44099, icon = "Interface\\Icons\\inv_shoulder_20"},
+    {id = 44100, icon = "Interface\\Icons\\inv_shoulder_10"},
+    {id = 44101, icon = "Interface\\Icons\\inv_shoulder_10"},
+    {id = 44102, icon = "Interface\\Icons\\inv_shoulder_29"},
+    {id = 44103, icon = "Interface\\Icons\\inv_shoulder_05"},
+    {id = 44105, icon = "Interface\\Icons\\inv_shoulder_01"},
+    {id = 44107, icon = "Interface\\Icons\\inv_shoulder_02"},
+    {id = 48677, icon = "Interface\\Icons\\inv_chest_chain_07"},
+    {id = 48683, icon = "Interface\\Icons\\inv_chest_chain_11"},
+    {id = 48685, icon = "Interface\\Icons\\inv_chest_plate03"},
+    {id = 48687, icon = "Interface\\Icons\\inv_chest_leather_06"},
+    {id = 48689, icon = "Interface\\Icons\\inv_chest_leather_07"},
+    {id = 48691, icon = "Interface\\Icons\\inv_chest_cloth_49"},
+    {id = 48716, icon = "Interface\\Icons\\inv_hammer_17"},
+    {id = 48718, icon = "Interface\\Icons\\inv_gizmo_02"},
+    {id = 50255, icon = "Interface\\Icons\\inv_jewelry_ring_39"}
+}
+
+-- Fonction pour créer un bouton pour chaque item avec son icône
+local function CreateItemButton(parent, itemData, x, y)
+    local button = CreateFrame("Button", "HeirloomItem_" .. itemData.id, parent, "SecureActionButtonTemplate")
+    button:SetSize(50, 50)
+    button:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+
+    -- Utiliser l'icône spécifiée
+    button:SetNormalTexture(itemData.icon)
+
+    -- Tooltip : affiche l'item héritage + le coût avec icône
+    button:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetHyperlink("item:" .. itemData.id)
+        GameTooltip:AddLine(" ")
+
+        local count = GetItemCount(CURRENCY_ITEM_ID)
+        local iconTag = "|T" .. CURRENCY_ICON .. ":14:14|t"
+
+        -- Ligne de coût bien visible
+        GameTooltip:AddLine("Coût : " .. iconTag .. " |cffffd700" .. CURRENCY_COST .. " Eclat(s) du gardien|r")
+
+        -- Indique si le joueur peut se le permettre
+        if count >= CURRENCY_COST then
+            GameTooltip:AddLine("|cff00ff00Vous avez " .. count .. " Eclat(s). Vous pouvez acheter.|r")
+        else
+            GameTooltip:AddLine("|cffff0000Vous avez " .. count .. " / " .. CURRENCY_COST .. " Eclat(s). Insuffisant.|r")
+        end
+
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+
+    -- Action au clic
+    button:SetScript("OnClick", function()
+        local count = GetItemCount(CURRENCY_ITEM_ID)
+        if count < CURRENCY_COST then
+            UIErrorsFrame:AddMessage("|cffff0000Il vous faut " .. CURRENCY_COST .. " Eclats du gardien. Vous en avez " .. count .. ".|r", 1, 0, 0)
+            return
+        end
+        AIO.Handle("HeirloomClient", "AddHeirloomItem", itemData.id)
+        PlaySoundFile(SPELL_TALENT_WINDOW_SOUND)
+    end)
+end
+
+-- Génération des boutons pour les 38 items
+local function GenerateItemButtons()
+    local startX, startY = 295, -150
+    local padding = 10
+    local buttonsPerRow = 8
+    local currentX, currentY = startX, startY
+
+    for i, itemData in ipairs(heirloomItems) do
+        CreateItemButton(frameHeirloomClient, itemData, currentX, currentY)
+        currentX = currentX + 70
+        if i % buttonsPerRow == 0 then
+            currentX = startX
+            currentY = currentY - 70
+        end
+    end
+end
+
+GenerateItemButtons()
+
+-- Fonction tooltip
+local function GetLocalizedTooltipText()
+    local locale = GetLocale()
+    local localizedText = {
+        frFR = "|cffffffffHéritage|r \n\nLes objets hérités offrent des stats évolutives\nqui grandissent avec vous tout au long de\nvotre aventure, renforçant ainsi votre puissance.",
+        enUS = "|cffffffffHeirloom|r \n\nHeirloom items provide scaling stats\nthat grow with you throughout your adventure,\nboosting your strength along the way."
+    }
+    return localizedText[locale] or localizedText["enUS"]
+end
+
+-- Sur Universe, CharacterFrame est disponible dès l'exécution du script AIO
+-- (même technique que Paragon). On s'ancre sur CharacterFrame et non PaperDollFrame
+-- qui lui n'est pas encore initialisé à ce stade.
+local heirloomCharacterFrameContainer = CreateFrame("Frame", "HeirloomCharacterFrameContainer", CharacterFrame)
+heirloomCharacterFrameContainer:SetSize(48, 48)
+heirloomCharacterFrameContainer:SetPoint("TOP", -203, -18)
+heirloomCharacterFrameContainer:SetFrameStrata("HIGH")
+heirloomCharacterFrameContainer:SetFrameLevel(10)
+heirloomCharacterFrameContainer:SetMovable(false)
+heirloomCharacterFrameContainer:EnableMouse(true)
+heirloomCharacterFrameContainer:SetClampedToScreen(true)
+
+-- Masquer/afficher selon l'onglet actif du CharacterFrame
+-- On se base sur l'onglet réellement sélectionné (PanelTemplates_GetSelectedTab)
+-- plutôt que sur PaperDollFrame:IsShown(), car l'onglet Monnaies (custom, non natif
+-- en 3.3.5) ne cache pas forcément PaperDollFrame en arrière-plan, ce qui faussait
+-- la détection.
+local function UpdateHeirloomButtonVisibility()
+    local selectedTab = PanelTemplates_GetSelectedTab(CharacterFrame)
+    if selectedTab == 1 then
+        heirloomCharacterFrameContainer:Show()
+    else
+        heirloomCharacterFrameContainer:Hide()
+    end
+end
+
+-- On hook directement PanelTemplates_SetTab plutôt que les boutons d'onglets
+-- individuellement. C'est cette fonction native qui gère le changement d'onglet
+-- pour TOUS les onglets du CharacterFrame (natifs ET custom, comme Monnaies qui
+-- est un ajout backporté). Hooker les boutons un par un ne fonctionnait pas de
+-- façon fiable pour l'onglet Monnaies, probablement créé/attaché après ce script
+-- ou via un chemin qui contournait le HookScript sur le bouton lui-même.
+hooksecurefunc("PanelTemplates_SetTab", function(frame, id)
+    if frame ~= CharacterFrame then
+        return
+    end
+    if id == 1 then
+        heirloomCharacterFrameContainer:Show()
+    else
+        heirloomCharacterFrameContainer:Hide()
+    end
+end)
+
+-- Vérification initiale à l'ouverture du CharacterFrame
+CharacterFrame:HookScript("OnShow", UpdateHeirloomButtonVisibility)
+CharacterFrame:HookScript("OnHide", function()
+    heirloomCharacterFrameContainer:Hide()
+end)
+
+-- Bouton border
+local heirloomCharacterFrameBorder = CreateFrame("Button", "HeirloomCharacterFrameBorder", heirloomCharacterFrameContainer)
+heirloomCharacterFrameBorder:SetSize(50, 50)
+heirloomCharacterFrameBorder:SetNormalTexture("Interface\\heirloomUI\\ButtonSystemHeirloom.blp")
+heirloomCharacterFrameBorder:SetHighlightTexture("Interface\\heirloomUI\\ButtonSystemHeirloomLight.blp")
+heirloomCharacterFrameBorder:SetPoint("CENTER", 0, 0)
+heirloomCharacterFrameBorder:SetFrameStrata("HIGH")
+heirloomCharacterFrameBorder:SetFrameLevel(12)
+
+-- Icône de fond
+local heirloomCharacterFrameBackground = CreateFrame("Frame", "HeirloomCharacterFrameBackground", heirloomCharacterFrameBorder)
+heirloomCharacterFrameBackground:SetSize(39, 39)
+heirloomCharacterFrameBackground:SetBackdrop({
+    bgFile = "Interface\\heirloomUI\\ButtonSystemHeirloom.blp",
+    insets = { left = 0, right = 0, top = 0, bottom = 0 }
+})
+heirloomCharacterFrameBackground:SetPoint("CENTER", 0, 0)
+heirloomCharacterFrameBackground:SetFrameLevel(11)
+
+-- Tooltip + clic
+heirloomCharacterFrameBorder:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(UIParent, "ANCHOR_CURSOR", 1, 5)
+    GameTooltip:SetText(GetLocalizedTooltipText())
+    GameTooltip:Show()
+end)
+heirloomCharacterFrameBorder:SetScript("OnLeave", function(self)
+    GameTooltip:Hide()
+end)
+heirloomCharacterFrameBorder:SetScript("OnMouseUp", function(self, button)
+    if frameHeirloomClient:IsShown() then
+        frameHeirloomClient:Hide()
+    else
+        frameHeirloomClient:Show()
+        PlaySoundFile(OPEN_TALENT_WINDOW_SOUND)
+    end
+end)

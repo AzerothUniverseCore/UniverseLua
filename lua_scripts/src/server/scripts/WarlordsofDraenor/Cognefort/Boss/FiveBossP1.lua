@@ -1,0 +1,11 @@
+--local npcId = 5100127 -- Remplacez ceci par l'ID du monstre
+--local targetPhase = 1 -- Remplacez ceci par l'ID de la phase vers laquelle vous voulez changer
+--
+--local function OnCreatureUpdate(event, creature, diff)
+--    if creature:IsAlive() and creature:GetHealthPct() <= 10 then
+--        creature:SetPhaseMask(targetPhase)
+--    end
+--end
+--
+--RegisterCreatureEvent(npcId, 7, OnCreatureUpdate)
+--

@@ -1,0 +1,70 @@
+playerInformations = {};
+
+--[[
+
+  Player
+
+]]--
+
+  -- onLogin
+    function getInformations(event, player)
+      local getPlayerInfo = CharDBQuery('SELECT expRate, isSesame FROM auc_eluna.mod_player_informations WHERE pGUID = '..player:GetGUIDLow()..';');
+      local getAccountInfo = CharDBQuery('SELECT rank FROM auc_eluna.mod_account_rank WHERE accountID = '..player:GetAccountId()..';');
+      if (not getPlayerInfo) then
+        CharDBQuery('INSERT IGNORE INTO auc_eluna.mod_player_informations (pGUID) VALUES ('..player:GetGUIDLow()..');');
+        local getPlayerInfo = CharDBQuery('SELECT expRate, isSesame FROM auc_eluna.mod_player_informations WHERE pGUID = '..player:GetGUIDLow()..';');
+        local getAccountInfo = CharDBQuery('SELECT rank FROM auc_eluna.mod_account_rank WHERE accountID = '..player:GetAccountId()..';');
+        -- --
+        playerInformations[player:GetGUIDLow()] = {
+          rank = getAccountInfo:GetUInt32(0),
+          expRate = getPlayerInfo:GetUInt32(0),
+          isSesame = getPlayerInfo:GetUInt32(1);
+        }
+      else
+        playerInformations[player:GetGUIDLow()] = {
+          rank = getAccountInfo:GetUInt32(0),
+          expRate = getPlayerInfo:GetUInt32(0),
+          isSesame = getPlayerInfo:GetUInt32(1);
+        }
+      end
+    end
+    RegisterPlayerEvent(3, getInformations)
+
+  -- onLogout
+    function saveInformations(event, player)
+      CharDBQuery('UPDATE auc_eluna.mod_account_rank SET rank = '..playerInformations[player:GetGUIDLow()].rank..' WHERE accountID = '..player:GetAccountId()..';')
+      CharDBQuery('UPDATE auc_eluna.mod_player_informations SET expRate = '..playerInformations[player:GetGUIDLow()].expRate..', isSesame = '..playerInformations[player:GetGUIDLow()].isSesame..' WHERE pGUID = '..player:GetGUIDLow()..';');
+    end
+    RegisterPlayerEvent(4, saveInformations)
+
+  -- onCreateChars
+    function createInformations(event, player)
+      local getAccountInfo = CharDBQuery('SELECT rank FROM auc_eluna.mod_account_rank WHERE accountID = '..player:GetAccountId()..';');
+      if (not getAccountInfo)then
+        local setAccountInfo = CharDBQuery('INSERT IGNORE INTO auc_eluna.mod_account_rank (accountID, rank) VALUES ("'..player:GetAccountId()..'", 0);');
+      end
+    end
+    RegisterPlayerEvent(1, createInformations)
+    RegisterPlayerEvent(3, createInformations)
+
+--[[
+
+  All Players
+
+]]--
+
+  -- afterReload
+    function getAllInformations(event)
+      for i, player in ipairs(GetPlayersInWorld()) do
+        getInformations(event, player);
+      end
+    end
+    RegisterServerEvent(33, getAllInformations)
+
+    -- beforeReload
+      local function saveAllInfomations(event)
+        for i, player in ipairs(GetPlayersInWorld()) do
+          saveInformations(event, player);
+        end
+      end
+      RegisterServerEvent(16, saveAllInfomations)

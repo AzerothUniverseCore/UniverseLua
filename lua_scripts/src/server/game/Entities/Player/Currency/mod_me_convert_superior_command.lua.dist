@@ -1,0 +1,103 @@
+local MenuId = 999;
+local playerPoints = {};
+
+local aMessage = '|cff00ffffAzeroth Universe vous remercie de votre achat. Si vous venez d\'acheter un article, n\'hésitez pas à consulter votre boîte aux lettres si vous n\'avez rien dans votre inventaire.';
+local bMessage = '|cff00ffffVous ne pouvez malheureusement pas vous le permettre, pensez à alimenter votre compte Azeroth Universe avec des Breloques Supérieures.';
+
+local mePanel = {
+  {0, 'Conversion : \n\nBreloques supérieures site \n => \nBreloques supérieures jeu', 1, 100}; -- Envoie vers shopPanel
+};
+
+local shopPanel = {
+    {1, "Breloques Supérieures", 1, 2900};
+};
+
+local currencySuperior = {
+  {0, "|TINTERFACE\\ICONS\\inv_tailoring_70_silkweavebag:35:35:-25:0:-25|tConteneurs de Breloques", 1, 700049, false, '|cffff0000Prix : \n\nx80 Breloques Supérieures', 80},
+};
+
+local function getBreloques(event, player, count)
+    local getPoints = CharDBQuery('SELECT dp FROM `auc_website`.`users` WHERE username = "'..player:GetAccountName()..'";');
+    if (count <= getPoints:GetUInt32(0)) then
+      return true;
+    else
+      return false;
+    end
+end
+
+local function setBreloques(event, player, count)
+  local getPoints = CharDBQuery('UPDATE `auc_website`.`users` SET dp = dp - '..count..' WHERE username = "'..player:GetAccountName()..'";');
+end
+
+local function onGossipHello(event, player, object)
+	player:GossipClearMenu()
+	player:GossipSetText('Panneau d\'utilisateur > ..\n\nIdentifiant du compte : '..player:GetAccountId()..'\nNom du compte : '..player:GetAccountName()..'\n\nIdentifiant du personnage : '..player:GetGUIDLow()..'\nNom du personnage : '..player:GetName()..'\n\n')
+  for i=1,#mePanel do
+    player:GossipMenuAddItem(mePanel[i][1], mePanel[i][2], mePanel[i][3], mePanel[i][4])
+  end
+  player:GossipSendMenu(0x7FFFFFFF, player, MenuId)
+end
+RegisterCreatureGossipEvent(2000040, 1, onGossipHello)
+
+local function onGossipSelect(event, player, object, sender, intid, code, menuid)
+  local getPoints = CharDBQuery('SELECT vp, dp FROM `auc_website`.`users` WHERE username = "'..player:GetAccountName()..'";');
+  if (not playerPoints[player:GetGUIDLow()] or playerPoints[player:GetGUIDLow()])then
+    playerPoints[player:GetGUIDLow()] = {
+      vp = getPoints:GetUInt32(0);
+      dp = getPoints:GetUInt32(1);
+    };
+  end
+  player:GossipClearMenu()
+  -- Back to MainMenu
+  if (intid == 99) then
+    onGossipHello(event, player, object)
+  end
+
+  --[[ Panel Master ]]--
+
+    -- User Panel Selection
+    if (intid == 100) then
+      player:GossipSetText('Panneau d\'utilisateur > Conversion de Breloques Supérieures > ..\n\nBienvenue sur notre système de conversion de breloques.\n\nVeuillez noter que chaque don/vote contribue au développement de Azeroth Universe.\n\n|TINTERFACE\\ICONS\\DP:30:30|t x'..playerPoints[player:GetGUIDLow()].dp..' [Breloques supérieures]|r')
+      for i=1,#shopPanel do
+        player:GossipMenuAddItem(shopPanel[i][1], shopPanel[i][2], shopPanel[i][3], shopPanel[i][4])
+      end
+      player:GossipMenuAddItem(4, "< Retour", 1, 99)
+    end
+	
+	-- Currency Superior
+    if (intid == 2900) then
+	player:GossipSetText('Panneau d\'utilisateur > Conversion de Breloques Supérieures > Breloques Supérieures\n\nConversion : Breloques Supérieures > Breloques Supérieures \n\n|TINTERFACE\\ICONS\\DP:30:30|t x'..playerPoints[player:GetGUIDLow()].dp..' [Breloques supérieures]|r')
+      for i=1,#currencySuperior do
+        player:GossipMenuAddItem(currencySuperior[i][1], currencySuperior[i][2], currencySuperior[i][3], currencySuperior[i][4], currencySuperior[i][5], currencySuperior[i][6])
+      end
+      player:GossipMenuAddItem(4, "< Retour", 1, 100)
+    end
+	  
+	  -- Currency Superior
+      for i=1,#currencySuperior do
+        if (intid == currencySuperior[i][4]) then
+          if (getBreloques(event, player, currencySuperior[i][7]) == true) then
+            player:AddItem(currencySuperior[i][4]);
+            CharDBQuery('INSERT IGNORE INTO auc_eluna.mod_me_shop_logs VALUES ('..player:GetGUIDLow()..', "'..os.date()..'", "Achat d\'un objet : Breloques Supérieures = '..currencySuperior[i][4]..'", 1)');
+            setBreloques(event, player, currencySuperior[i][7]);
+            player:SendNotification(aMessage);
+            onGossipHello(event, player, object);
+          else
+            player:SendNotification(bMessage);
+            onGossipHello(event, player, object)
+          end
+        end
+      end
+
+  player:GossipSendMenu(0x7FFFFFFF, player, MenuId)
+end
+
+local function OnPlayerCommand(event, player, command)
+    if (command == "modmesuperior" or command ==""..player:GetName().."") then
+        onGossipHello(event, player, player)
+        return false
+    end
+end
+
+RegisterPlayerEvent(42, OnPlayerCommand)
+RegisterPlayerGossipEvent(MenuId, 2, onGossipSelect)
