@@ -210,6 +210,17 @@ local function LoadTransmog(guid, slotId)
     return 0
 end
 
+-- Construire la table des apparences actuellement appliquées pour un
+-- joueur (utilisée par le client pour afficher la BONNE icône après
+-- application, puisque l'item réellement équipé ne change pas).
+local function BuildAppliedAppearances(guid)
+    local appearances = {}
+    for slotId, _ in pairs(EQUIPMENT_SLOTS) do
+        appearances[slotId] = LoadTransmog(guid, slotId)
+    end
+    return appearances
+end
+
 -- Supprimer une transmogrification d'un slot
 local function DeleteTransmog(guid, slotId)
     local query = string.format(
@@ -283,6 +294,8 @@ end
 function TransmogHandlers.OpenUI(player)
     --print(">> Opening Transmog UI for " .. player:GetName())
     AIO.Handle(player, "Transmog", "CreateUI")
+    TransmogHandlers.GetSlotAvailability(player)
+    AIO.Handle(player, "Transmog", "UpdateAppliedAppearances", BuildAppliedAppearances(player:GetGUIDLow()))
 end
 
 -- Handler: Obtenir les items disponibles pour un slot
@@ -306,6 +319,19 @@ function TransmogHandlers.GetItems(player, slotId, page)
     
     -- Envoyer au client
     AIO.Handle(player, "Transmog", "UpdateItemGrid", pageItems, page, totalPages)
+end
+
+-- Handler : indique, pour chaque emplacement, si le joueur possede au moins
+-- un objet compatible dans ses sacs (utilise par le client pour n'afficher
+-- l'icone "indisponible" que si aucun objet de transmog n'est possede, et non
+-- simplement parce que rien n'est equipe dans ce slot).
+function TransmogHandlers.GetSlotAvailability(player)
+    local availability = {}
+    for slotId, _ in pairs(EQUIPMENT_SLOTS) do
+        local items = GetAvailableItemsFromBags(player, slotId)
+        availability[slotId] = (#items > 0)
+    end
+    AIO.Handle(player, "Transmog", "UpdateSlotAvailability", availability)
 end
 
 -- Handler: Appliquer une transmogrification
@@ -387,6 +413,7 @@ function TransmogHandlers.ApplyTransmog(player, slotId, itemEntry)
     ApplyTransmogVisual(player, slotId, itemEntry)
     
     AIO.Handle(player, "Transmog", "ShowSuccess", "Transmogrification appliquée avec succès!")
+    AIO.Handle(player, "Transmog", "UpdateAppliedAppearances", BuildAppliedAppearances(player:GetGUIDLow()))
     
     --print(string.format(">> %s transmogged slot %d to item %d (display %d)", 
         --player:GetName(), slotId, itemEntry, displayId))
@@ -402,6 +429,7 @@ function TransmogHandlers.ResetSlot(player, slotId)
     RestoreOriginalVisual(player, slotId)
     
     AIO.Handle(player, "Transmog", "ShowSuccess", "Slot réinitialisé!")
+    AIO.Handle(player, "Transmog", "UpdateAppliedAppearances", BuildAppliedAppearances(player:GetGUIDLow()))
 end
 
 -- Handler: Réinitialiser tous les slots
@@ -414,6 +442,7 @@ function TransmogHandlers.ResetAll(player)
     end
     
     AIO.Handle(player, "Transmog", "ShowSuccess", "Toutes les transmogrifications réinitialisées!")
+    AIO.Handle(player, "Transmog", "UpdateAppliedAppearances", BuildAppliedAppearances(player:GetGUIDLow()))
 end
 
 -- Charger et appliquer les transmogrifications au login
