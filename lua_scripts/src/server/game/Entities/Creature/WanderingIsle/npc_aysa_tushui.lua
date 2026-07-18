@@ -1,19 +1,3 @@
--- ============================================================
--- NPC 56661 & 54567 - The Way of the Tushui
--- Quest 29414 - Eluna Lua (ElunaTrinityWotlk 3.3.5)
---
--- CORRECTION MULTISTATE :
---   GetMapById() N'EXISTE PAS dans les states de map (state: 860 etc.)
---   Il n'existe que dans le world state.
---   En mode multistate, CreateLuaEvent s'execute dans le state de la map
---   courante -> utiliser GetStateMap() pour obtenir la map, puis
---   map:GetWorldObject(guid) pour resoudre la creature.
---   GetStateMap() retourne toujours la map correcte dans un state de map.
--- ============================================================
-
--- -------------------------------------------------------
--- CONSTANTES
--- -------------------------------------------------------
 local QUEST_WAY_OF_THE_TUSHUI = 29414
 local NPC_AYSA                = 54567
 local NPC_AYSA_LAKE_ESCORT    = 56661
@@ -25,8 +9,8 @@ local AREA_CAVE_OF_MEDITATION = 5848
 local STANDSTATE_STAND        = 0
 local STANDSTATE_SIT          = 1
 
-local MEDITATION_DURATION     = 90       -- secondes
-local WAVE_INTERVAL_MS        = 15000    -- ms entre vagues
+local MEDITATION_DURATION     = 90
+local WAVE_INTERVAL_MS        = 15000
 local MOBS_PER_WAVE           = 3
 
 local LIFEI_TALK_THRESHOLDS   = { 25, 30, 42, 54, 66, 78, 85 }
@@ -37,16 +21,13 @@ local TROUBLEMAKER_SPAWNS = {
     { x = 1154.55, y = 3438.75, z = 104.973, o = 3.6 },
 }
 
--- -------------------------------------------------------
--- ETAT PAR INSTANCE
--- -------------------------------------------------------
 local AysaState = {}
 
 local function GetState(creature)
     local guid = creature:GetGUID()
     if not AysaState[guid] then
         AysaState[guid] = {
-            aysaGUID         = guid,  -- GUID uint64 d'Aysa, pour ResolveAysa()
+            aysaGUID         = guid,
             meditationActive = false,
             meditationTimer  = 0,
             lifeiGUID        = nil,
@@ -64,20 +45,6 @@ end
 
 local function ClearState(creature)
     AysaState[creature:GetGUID()] = nil
-end
-
--- -------------------------------------------------------
--- RESOLUTION D'AYSA DEPUIS LE STATE
--- FIX MULTISTATE : GetStateMap() fonctionne dans n'importe quel
--- CreateLuaEvent car l'event tourne dans le state de la map.
--- GetMapById() n'existe PAS dans les states de map -> erreur state:860.
--- -------------------------------------------------------
-local function ResolveAysa(state)
-    local map = GetStateMap()   -- retourne la Map du state courant (map 860 ici)
-    if not map then return nil, nil end
-    local aysa = map:GetWorldObject(state.aysaGUID)
-    if not aysa then return nil, nil end
-    return aysa, map
 end
 
 -- -------------------------------------------------------
@@ -200,15 +167,16 @@ local function StartMeditation(creature)
 
     creature:SendUnitSay("Je vais mediter maintenant. Protegez-moi des perturbateurs !", 0)
 
-    -- -------------------------------------------------------
-    -- Tick 1s : progression 1->100%
-    -- FIX : GetStateMap() au lieu de creature capturee par closure
-    -- -------------------------------------------------------
-    state.eventTick = CreateLuaEvent(function()
+    local firstTick = true
+    state.eventTick = creature:RegisterEvent(function(eId, delay, repeats, c)
         if not state.meditationActive then return end
+        if firstTick then
+            firstTick = false
+            --print("|cff00ff88[Aysa]|r Tick meditation demarre (RegisterEvent OK).")
+        end
 
-        local aysa, m = ResolveAysa(state)
-        if not aysa or not m then return end
+        local m = c:GetMap()
+        if not m then return end
 
         state.meditationTimer = state.meditationTimer + 1
         local pct = math.min(
@@ -219,7 +187,7 @@ local function StartMeditation(creature)
         -- Dialogues Li Fei aux seuils
         for i, threshold in ipairs(LIFEI_TALK_THRESHOLDS) do
             if state.meditationTimer == threshold then
-                local lifei = GetOrSpawnLifei(aysa, state)
+                local lifei = GetOrSpawnLifei(c, state)
                 if lifei then
                     lifei:SendUnitSay("...", i - 1)
                     if i == 7 then
@@ -232,7 +200,7 @@ local function StartMeditation(creature)
         end
 
         -- Mise a jour barre de progression
-        UpdatePlayerGUIDs(aysa, state)
+        UpdatePlayerGUIDs(c, state)
         ForEachPlayer(m, state, function(player)
             if not player:HasAura(SPELL_MEDITATION_BAR) then
                 player:CastSpell(player, SPELL_MEDITATION_BAR, true)
@@ -244,23 +212,25 @@ local function StartMeditation(creature)
     end, 1000, 0)
 
     -- -------------------------------------------------------
-    -- Vagues de mobs
+    -- Vagues de mobs (meme fix : RegisterEvent au lieu de CreateLuaEvent)
     -- -------------------------------------------------------
-    state.eventWave = CreateLuaEvent(function()
+    local firstWave = true
+    state.eventWave = creature:RegisterEvent(function(eId, delay, repeats, c)
         if not state.meditationActive then return end
+        if firstWave then
+            firstWave = false
+            --print("|cff00ff88[Aysa]|r Premiere vague de perturbateurs (RegisterEvent OK).")
+        end
 
-        local aysa, m = ResolveAysa(state)
-        if not aysa or not m then return end
-
-        UpdatePlayerGUIDs(aysa, state)
-        SpawnMobWave(aysa)
+        UpdatePlayerGUIDs(c, state)
+        SpawnMobWave(c)
 
     end, WAVE_INTERVAL_MS, 0)
 
     -- -------------------------------------------------------
-    -- Fin de meditation
+    -- Fin de meditation (meme fix : RegisterEvent au lieu de CreateLuaEvent)
     -- -------------------------------------------------------
-    state.eventEnd = CreateLuaEvent(function()
+    state.eventEnd = creature:RegisterEvent(function(eId, delay, repeats, c)
         state.eventEnd         = nil
         state.meditationActive = false
         state.inScript         = false
@@ -268,17 +238,17 @@ local function StartMeditation(creature)
         if state.eventTick then RemoveEventById(state.eventTick) ; state.eventTick = nil end
         if state.eventWave then RemoveEventById(state.eventWave) ; state.eventWave = nil end
 
-        local aysa, m = ResolveAysa(state)
-        if not aysa or not m then return end
+        local m = c:GetMap()
+        if not m then return end
 
         DespawnLifei(m, state)
 
-        aysa:SetStandState(STANDSTATE_STAND)
-        aysa:SetReactState(1)
-        aysa:SendUnitSay("La meditation est accomplie. Vous avez bien defendu la Voie de Tushui.", 0)
+        c:SetStandState(STANDSTATE_STAND)
+        c:SetReactState(1)
+        c:SendUnitSay("La meditation est accomplie. Vous avez bien defendu la Voie de Tushui.", 0)
 
         -- Snapshot final des GUIDs
-        UpdatePlayerGUIDs(aysa, state)
+        UpdatePlayerGUIDs(c, state)
         local finalGUIDs = {}
         for _, g in ipairs(state.playerGUIDs) do
             table.insert(finalGUIDs, g)
@@ -295,8 +265,8 @@ local function StartMeditation(creature)
         end
 
         -- Retrait aura differe de 2s via RegisterEvent (c est fourni safe)
-        aysa:RegisterEvent(function(eId, delay, repeats, c)
-            local m2 = c:GetMap()
+        c:RegisterEvent(function(eId2, delay2, repeats2, c2)
+            local m2 = c2:GetMap()
             if not m2 then return end
             for _, guid in ipairs(finalGUIDs) do
                 local player = m2:GetWorldObject(guid)
@@ -309,12 +279,9 @@ local function StartMeditation(creature)
         state.meditationTimer = 0
 
         -- Nouvelle session dans 30s
-        state.eventStart = CreateLuaEvent(function()
+        state.eventStart = c:RegisterEvent(function(eId3, delay3, repeats3, c3)
             state.eventStart = nil
-            local aysa2, _ = ResolveAysa(state)
-            if aysa2 then
-                StartMeditation(aysa2)
-            end
+            StartMeditation(c3)
         end, 30000, 1)
 
     end, MEDITATION_DURATION * 1000, 1)
@@ -349,12 +316,9 @@ local function InterruptMeditation(creature, state)
 
     creature:SendUnitSay("Ma meditation a ete interrompue ! Nous devons recommencer.", 0)
 
-    state.eventStart = CreateLuaEvent(function()
+    state.eventStart = creature:RegisterEvent(function(eId, delay, repeats, c)
         state.eventStart = nil
-        local aysa, _ = ResolveAysa(state)
-        if aysa then
-            StartMeditation(aysa)
-        end
+        StartMeditation(c)
     end, 20000, 1)
 end
 
@@ -412,12 +376,9 @@ local function Aysa_OnSpawn(event, creature)
     creature:SetFaction(2263)
 
     if creature:GetAreaId() == AREA_CAVE_OF_MEDITATION then
-        state.eventStart = CreateLuaEvent(function()
+        state.eventStart = creature:RegisterEvent(function(eId, delay, repeats, c)
             state.eventStart = nil
-            local aysa, _ = ResolveAysa(state)
-            if aysa then
-                StartMeditation(aysa)
-            end
+            StartMeditation(c)
         end, 3000, 1)
     end
 end

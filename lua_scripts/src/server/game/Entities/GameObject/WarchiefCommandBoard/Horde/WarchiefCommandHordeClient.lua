@@ -205,17 +205,14 @@ local function BuildFlyerColumn(flyer, colIndex)
     table.insert(activeFlyerWidgets, btn)
 end
 
--- ------------------------------------------------------------
---  État vide — toutes missions accomplies
--- ------------------------------------------------------------
-local function ShowEmptyState()
+local function ShowEmptyState(message)
     local fs = WarchiefBoardFrame:CreateFontString(nil, "OVERLAY")
     fs:SetFont("Fonts\\FRIZQT__.TTF", 13, "OUTLINE")
     fs:SetPoint("CENTER", WarchiefBoardFrame, "CENTER", 0, -30)
     fs:SetWidth(400)
     fs:SetJustifyH("CENTER")
     fs:SetTextColor(0.9, 0.75, 0.3, 1)
-    fs:SetText("Vous avez accompli toutes les missions disponibles.\nRevenez plus tard !")
+    fs:SetText(message or "Vous avez accompli toutes les missions disponibles.\nRevenez plus tard !")
     table.insert(activeFlyerWidgets, fs)
 end
 
@@ -229,7 +226,8 @@ function WarchiefCommandHordeHandlers.OpenInterface(player, count, ...)
     count = tonumber(count) or 0
 
     if count == 0 then
-        ShowEmptyState()
+        local emptyArgs = { ... }
+        ShowEmptyState(emptyArgs[1])
         WarchiefBoardFrame:Show()
         return
     end

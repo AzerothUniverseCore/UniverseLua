@@ -10,7 +10,7 @@ local AIO = AIO or require("AIO")
 local WarchiefCommandAllianceHandlers = AIO.AddHandlers("WarchiefCommandAllianceHandler", {})
 
 local GAMEOBJECT_ENTRY = 206111
-local FACTION_ALLIANCE    = 0
+local FACTION_ALLIANCE = 0
 
 -- Longueur max de la description (caractères) — réduite car plus de JSON overhead
 local DESC_MAX_LEN = 400
@@ -30,6 +30,17 @@ local function IsQuestRewarded(player, questId)
 end
 
 -- ------------------------------------------------------------
+--  Vérifie si le joueur a le niveau requis pour un dépliant
+--  requiredLevel = 0 (ou nil) => aucune restriction
+-- ------------------------------------------------------------
+local function PlayerMeetsLevel(player, requiredLevel)
+    if not requiredLevel or requiredLevel <= 0 then
+        return true
+    end
+    return player:GetLevel() >= requiredLevel
+end
+
+-- ------------------------------------------------------------
 --  Lecture de la DB
 -- ------------------------------------------------------------
 local function GetAvailableFlyers(player)
@@ -39,7 +50,7 @@ local function GetAvailableFlyers(player)
 
     local result = WorldDBQuery(
         "SELECT title, description, button_label, card_image, " ..
-        "quest_id, map_id, pos_x, pos_y, pos_z, orientation, teleport_msg " ..
+        "quest_id, map_id, pos_x, pos_y, pos_z, orientation, teleport_msg, level " ..
         "FROM warchief_command_flyers " ..
         "WHERE faction = " .. FACTION_ALLIANCE .. " AND enabled = 1 " ..
         "ORDER BY sort_order ASC"
@@ -47,22 +58,35 @@ local function GetAvailableFlyers(player)
 
     if not result then
         --print("[WarchiefBoard] ERREUR : table warchief_command_flyers vide ou introuvable !")
-        return {}
+        return {}, 0, 0, 0
     end
 
-    local flyers = {}
-    local total  = 0
+    local flyers            = {}
+    local total             = 0
+    local rewardedCount     = 0
+    local levelBlockedCount = 0
 
     repeat
         total = total + 1
-        local questId  = result:GetUInt32(4)
-        local rewarded = IsQuestRewarded(player, questId)
+        local questId       = result:GetUInt32(4)
+        local requiredLevel = result:GetUInt32(11)
+        local rewarded       = IsQuestRewarded(player, questId)
+        local levelOk        = PlayerMeetsLevel(player, requiredLevel)
 
         --print("[WarchiefBoard] Dépliant #" .. total ..
         --      " questId=" .. questId ..
-        --      " rewarded=" .. tostring(rewarded))
+        --      " rewarded=" .. tostring(rewarded) ..
+        --      " requiredLevel=" .. requiredLevel ..
+        --      " levelOk=" .. tostring(levelOk))
 
-        if not rewarded then
+        if rewarded then
+            rewardedCount = rewardedCount + 1
+        elseif not levelOk then
+            -- Pas encore récompensée mais niveau insuffisant : distinct
+            -- de "rewarded" pour pouvoir donner le bon message au joueur
+            -- (voir OpenWarchiefBoard).
+            levelBlockedCount = levelBlockedCount + 1
+        else
             local desc = result:GetString(1)
             if #desc > DESC_MAX_LEN then
                 desc = desc:sub(1, DESC_MAX_LEN - 3) .. "..."
@@ -84,8 +108,9 @@ local function GetAvailableFlyers(player)
         end
     until not result:NextRow()
 
-    --print("[WarchiefBoard] Total DB=" .. total .. " | Affichés=" .. #flyers)
-    return flyers
+    --print("[WarchiefBoard] Total DB=" .. total .. " | Affichés=" .. #flyers ..
+    --      " | Récompensés=" .. rewardedCount .. " | BloquésNiveau=" .. levelBlockedCount)
+    return flyers, total, rewardedCount, levelBlockedCount
 end
 
 -- ------------------------------------------------------------
@@ -96,11 +121,23 @@ end
 --                t2,d2, ...)
 -- ------------------------------------------------------------
 local function OpenWarchiefBoard(player)
-    local flyers = GetAvailableFlyers(player)
+    local flyers, total, rewardedCount, levelBlockedCount = GetAvailableFlyers(player)
 
     if #flyers == 0 then
-        player:SendBroadcastMessage("|cffFFD700[Chef de guerre]|r Toutes les missions sont accomplies. Revenez plus tard !")
-        AIO.Handle(player, "WarchiefCommandAllianceHandler", "OpenInterface", 0)
+        -- FIX : distinguer "tout est déjà accompli" de "niveau insuffisant"
+        -- (avant, le message générique "toutes accomplies" s'affichait
+        -- aussi quand un perso bas niveau n'avait accès à aucun dépliant).
+        local emptyMsg
+        if total > 0 and rewardedCount == total then
+            emptyMsg = "Vous avez accompli toutes les missions disponibles.\nRevenez plus tard !"
+        elseif levelBlockedCount > 0 then
+            emptyMsg = "Aucune mission n'est disponible pour votre niveau actuel.\nRevenez plus tard !"
+        else
+            emptyMsg = "Aucune mission n'est disponible pour le moment.\nRevenez plus tard !"
+        end
+
+        player:SendBroadcastMessage("|cffFFD700[Chef de guerre]|r " .. emptyMsg:gsub("\n", " "))
+        AIO.Handle(player, "WarchiefCommandAllianceHandler", "OpenInterface", 0, emptyMsg)
         return
     end
 
@@ -129,6 +166,9 @@ end
 
 -- ------------------------------------------------------------
 --  Acceptation d'une quête + téléportation
+--  Re-vérifie le niveau côté serveur (défense en profondeur : la liste
+--  côté client masque déjà les dépliants hors niveau, mais un joueur
+--  pourrait en théorie rejouer un appel AIO AcceptQuest directement).
 -- ------------------------------------------------------------
 function WarchiefCommandAllianceHandlers.AcceptQuest(player, questId)
     if not questId then
@@ -137,7 +177,7 @@ function WarchiefCommandAllianceHandlers.AcceptQuest(player, questId)
     end
 
     local result = WorldDBQuery(
-        "SELECT title, map_id, pos_x, pos_y, pos_z, orientation, teleport_msg " ..
+        "SELECT title, map_id, pos_x, pos_y, pos_z, orientation, teleport_msg, level " ..
         "FROM warchief_command_flyers " ..
         "WHERE quest_id = " .. questId ..
         " AND faction = " .. FACTION_ALLIANCE ..
@@ -149,18 +189,24 @@ function WarchiefCommandAllianceHandlers.AcceptQuest(player, questId)
         return
     end
 
+    local title         = result:GetString(0)
+    local mapId         = result:GetUInt32(1)
+    local posX          = result:GetFloat(2)
+    local posY          = result:GetFloat(3)
+    local posZ          = result:GetFloat(4)
+    local ori           = result:GetFloat(5)
+    local tpMsg         = result:GetString(6)
+    local requiredLevel = result:GetUInt32(7)
+
+    if not PlayerMeetsLevel(player, requiredLevel) then
+        player:SendBroadcastMessage("|cffFFD700[Chef de guerre]|r Vous devez être niveau " .. requiredLevel .. " pour accomplir cette mission.")
+        return
+    end
+
     if IsQuestRewarded(player, questId) then
         player:SendBroadcastMessage("|cffFFD700[Chef de guerre]|r Vous avez déjà accompli cette mission.")
         return
     end
-
-    local title = result:GetString(0)
-    local mapId = result:GetUInt32(1)
-    local posX  = result:GetFloat(2)
-    local posY  = result:GetFloat(3)
-    local posZ  = result:GetFloat(4)
-    local ori   = result:GetFloat(5)
-    local tpMsg = result:GetString(6)
 
     if not player:HasQuest(questId) then
         player:AddQuest(questId)
