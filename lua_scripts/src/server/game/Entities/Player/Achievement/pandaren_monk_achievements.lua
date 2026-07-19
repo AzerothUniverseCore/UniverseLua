@@ -19,7 +19,7 @@ local CLASS_MONK             = 14
 local ACHIEVEMENT_PANDAREN   = 6753   -- "PREMIER Pandaren au niveau 80"
 local ACHIEVEMENT_MONK       = 6752   -- "PREMIER Moine au niveau 80"
 
-local MAX_LEVEL              = 80
+local MAX_LEVEL              = 90
 
 -- -------------------------------------------------------
 -- Fonction : Vérifier si un achievement a déjà été attribué
