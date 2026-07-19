@@ -12,9 +12,9 @@
 -- -------------------------------------------------------
 -- Constantes
 -- -------------------------------------------------------
-local RACE_PANDAREN_ALLIANCE = 25
-local RACE_PANDAREN_HORDE    = 26
-local CLASS_MONK             = 10
+local RACE_PANDAREN_ALLIANCE = 14
+local RACE_PANDAREN_HORDE    = 13
+local CLASS_MONK             = 14
 
 local ACHIEVEMENT_PANDAREN   = 6753   -- "PREMIER Pandaren au niveau 80"
 local ACHIEVEMENT_MONK       = 6752   -- "PREMIER Moine au niveau 80"
