@@ -12,6 +12,119 @@ local CONVERT_ITEM_ID = 7000655
 
 local ConvertFrame = nil
 
+-- Table partagee (globale) entre Mod_Me_ConvertClient.lua et Mod_Me_PanelClient.lua :
+-- permet aux onglets "Identite"/"Banque" de chaque livre d'ouvrir l'autre.
+-- Voir Mod_Me_PanelClient.lua pour le meme mecanisme cote Panel.
+_G.ModMeUI = _G.ModMeUI or {}
+local ModMeUI = _G.ModMeUI
+
+-- ===================== Localisation (frFR / enUS) =====================
+-- Meme mecanisme que Mod_Me_PanelClient.lua : detection via GetLocale(),
+-- repli sur frFR pour toute locale non geree. Les codes SRV_* correspondent
+-- aux "code" envoyes par Mod_Me_ConvertServer.lua (ConvertResult) : le
+-- serveur ne transmet plus de texte en dur, seulement un code + les valeurs
+-- numeriques, et c'est le client qui choisit la langue d'affichage.
+local UI_LOCALE = (GetLocale and GetLocale() == "enUS") and "enUS" or "frFR"
+
+local L = ({
+    frFR = {
+        TITLE = "Grimoire de Conversion",
+        SITE_HEADER = "BRELOQUES DU SITE",
+        SITE_TITLE = "Breloques Supérieures (site)",
+        SITE_DESC1 = "Monnaie obtenue en contribuant au serveur.",
+        SITE_DESC2 = "Convertissez-la ici en Breloque Supérieure utilisable en jeu.",
+        QUANTITE = "Quantité actuel : ",
+        GAME_HEADER = "BRELOQUES DU JEU",
+        GAME_TITLE = "Breloque Supérieure (jeu)",
+        GAME_DESC1 = "Monnaie obtenu en convertissant vos Breloques Supérieures (site).",
+        GAME_DESC2 = "Utilisable dans les zones cosmétiques ou la boutique du jeu.",
+        AMOUNT_LABEL = "Quantité à convertir :",
+        CONVERTIR = "Convertir",
+        NO_RESPONSE = "|cFFFF0000Aucune réponse du serveur. Réessayez.|r",
+        INVALID_AMOUNT = "|cFFFF0000Entrez une quantité valide.|r",
+        INSUFFICIENT_CLIENT = "|cFFFF0000Solde insuffisant. Vous possédez %d Breloque(s) Supérieure(s) du site.|r",
+        CONVERTING = "|cFFFFD700Conversion en cours...|r",
+        ACTUALISER = "Actualiser",
+        IDENTITE = "Identité",
+        BANQUE = "Banque",
+        SRV_INVALID_AMOUNT = "|cFFFF0000Quantité invalide.|r",
+        SRV_INSUFFICIENT = "|cFFFF0000Solde insuffisant. Vous possédez %d Breloque(s) Supérieure(s) du site.|r",
+        SRV_FAILED = "|cFFFF0000La conversion a échoué. Aucun point n'a été débité.|r",
+        SRV_SUCCESS_MAIL = "|cFF00FF00Conversion réussie ! %d Breloque(s) Supérieure(s) envoyée(s) par courrier (sacs pleins).|r",
+        SRV_SUCCESS_BAG = "|cFF00FF00Conversion réussie ! %d Breloque(s) Supérieure(s) ajoutée(s) à votre inventaire.|r",
+    },
+    enUS = {
+        TITLE = "Conversion Grimoire",
+        SITE_HEADER = "SITE CHARMS",
+        SITE_TITLE = "Greater Charms (site)",
+        SITE_DESC1 = "Currency earned by contributing to the server.",
+        SITE_DESC2 = "Convert it here into a Greater Charm usable in-game.",
+        QUANTITE = "Current amount: ",
+        GAME_HEADER = "IN-GAME CHARMS",
+        GAME_TITLE = "Greater Charm (in-game)",
+        GAME_DESC1 = "Currency obtained by converting your Greater Charms (site).",
+        GAME_DESC2 = "Usable in cosmetic areas or the in-game shop.",
+        AMOUNT_LABEL = "Amount to convert:",
+        CONVERTIR = "Convert",
+        NO_RESPONSE = "|cFFFF0000No response from the server. Please try again.|r",
+        INVALID_AMOUNT = "|cFFFF0000Enter a valid amount.|r",
+        INSUFFICIENT_CLIENT = "|cFFFF0000Insufficient balance. You have %d Greater Charm(s) on the site.|r",
+        CONVERTING = "|cFFFFD700Conversion in progress...|r",
+        ACTUALISER = "Refresh",
+        IDENTITE = "Identity",
+        BANQUE = "Bank",
+        SRV_INVALID_AMOUNT = "|cFFFF0000Invalid amount.|r",
+        SRV_INSUFFICIENT = "|cFFFF0000Insufficient balance. You have %d Greater Charm(s) on the site.|r",
+        SRV_FAILED = "|cFFFF0000Conversion failed. No points were deducted.|r",
+        SRV_SUCCESS_MAIL = "|cFF00FF00Conversion successful! %d Greater Charm(s) sent by mail (bags full).|r",
+        SRV_SUCCESS_BAG = "|cFF00FF00Conversion successful! %d Greater Charm(s) added to your inventory.|r",
+    },
+})[UI_LOCALE]
+
+-- Couleurs des onglets "Identite"/"Banque" : l'onglet du livre actuellement
+-- ouvert reste "allume" (dore), l'autre est "eteint" (gris) tant qu'on ne
+-- passe pas la souris dessus. La texture de surbrillance native du template
+-- (UI-Character-Tab-RealHighlight) est desactivee au profit de ce simple
+-- changement de couleur : elle s'affichait mal proportionnee (rectangle
+-- bleu) sur ce client.
+local TAB_COLOR_ACTIVE   = { 1, 0.82, 0 }
+local TAB_COLOR_INACTIVE = { 0.6, 0.6, 0.6 }
+local TAB_COLOR_HOVER    = { 1, 0.92, 0.6 }
+
+local function SetupModMeTab(tab, isActive, onClickFn)
+    local hl = tab:GetHighlightTexture()
+    if hl then
+        hl:SetTexture(nil)
+    end
+
+    -- Sur ce client, Button n'expose pas de methode SetTextColor : il faut
+    -- passer par le FontString sous-jacent (toujours valide, quel que soit
+    -- l'etat active/desactive du bouton, car Normal/Highlight/Disabled ne
+    -- sont que des styles appliques a ce meme FontString).
+    local fontString = tab:GetFontString()
+
+    if isActive then
+        PanelTemplates_SelectTab(tab)
+        if fontString then
+            fontString:SetTextColor(unpack(TAB_COLOR_ACTIVE))
+        end
+    else
+        PanelTemplates_DeselectTab(tab)
+        if fontString then
+            fontString:SetTextColor(unpack(TAB_COLOR_INACTIVE))
+        end
+        tab:SetScript("OnEnter", function(self)
+            local fs = self:GetFontString()
+            if fs then fs:SetTextColor(unpack(TAB_COLOR_HOVER)) end
+        end)
+        tab:SetScript("OnLeave", function(self)
+            local fs = self:GetFontString()
+            if fs then fs:SetTextColor(unpack(TAB_COLOR_INACTIVE)) end
+        end)
+        tab:SetScript("OnClick", onClickFn)
+    end
+end
+
 local function CreateConvertUI()
     if ConvertFrame then
         return ConvertFrame
@@ -136,7 +249,7 @@ local function CreateConvertUI()
     -- ===================== Titre =====================
     frame.title = metalBorder:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     frame.title:SetPoint("TOP", metalBorder, "TOP", 0, -17 * SB)
-    frame.title:SetText("Grimoire de Conversion")
+    frame.title:SetText(L.TITLE)
 
     -- Icône ronde en haut à gauche : icône de classe du joueur (même socle que le Grimoire d'identité)
     local classIconFrame = CreateFrame("Frame", nil, metalBorder)
@@ -216,7 +329,7 @@ local function CreateConvertUI()
     end
 
     -- ===================== Page gauche : solde du site =====================
-    local siteHeader, siteBorder = CreateSectionHeader(leftPage, "BRELOQUES DU SITE")
+    local siteHeader, siteBorder = CreateSectionHeader(leftPage, L.SITE_HEADER)
     siteHeader:SetPoint("TOP", leftPage, "TOP", -60, -20)
 
     local siteIconHolder, siteIcon = CreateIconSlot(leftPage, 48)
@@ -228,11 +341,11 @@ local function CreateConvertUI()
     siteIconHolder:EnableMouse(true)
     siteIconHolder:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("Breloques Supérieures (site)", 1, 0.82, 0)
-        GameTooltip:AddLine("Monnaie obtenue en contribuant au serveur.", 1, 1, 1, true)
-        GameTooltip:AddLine("Convertissez-la ici en Breloque Supérieure utilisable en jeu.", 0.8, 0.8, 0.8, true)
+        GameTooltip:SetText(L.SITE_TITLE, 1, 0.82, 0)
+        GameTooltip:AddLine(L.SITE_DESC1, 1, 1, 1, true)
+        GameTooltip:AddLine(L.SITE_DESC2, 0.8, 0.8, 0.8, true)
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("Quantité actuel : |cFFFFD700"..tostring(frame.siteValue).."|r", 0.6, 0.6, 0.6)
+        GameTooltip:AddLine(L.QUANTITE.."|cFFFFD700"..tostring(frame.siteValue).."|r", 0.6, 0.6, 0.6)
         GameTooltip:Show()
     end)
     siteIconHolder:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -243,10 +356,10 @@ local function CreateConvertUI()
 
     local siteSubLabel = leftPage:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     siteSubLabel:SetPoint("TOP", frame.siteBalanceLabel, "BOTTOM", 0, -6)
-    siteSubLabel:SetText("Breloques Supérieures (site)")
+    siteSubLabel:SetText(L.SITE_TITLE)
 
     -- ===================== Page droite : conversion vers l'objet du jeu =====================
-    local gameHeader, gameBorder = CreateSectionHeader(rightPage, "BRELOQUES DU JEU")
+    local gameHeader, gameBorder = CreateSectionHeader(rightPage, L.GAME_HEADER)
     gameHeader:SetPoint("TOP", rightPage, "TOP", -20, -20)
 
     local gameIconHolder, gameIcon = CreateIconSlot(rightPage, 48)
@@ -259,21 +372,21 @@ local function CreateConvertUI()
     gameIconHolder:EnableMouse(true)
     gameIconHolder:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("Breloque Supérieure (jeu)", 1, 0.82, 0)
-        GameTooltip:AddLine("Monnaie obtenu en convertissant vos Breloques Supérieures (site).", 1, 1, 1, true)
-        GameTooltip:AddLine("Utilisable dans les zones cosmétiques ou la boutique du jeu.", 0.8, 0.8, 0.8, true)
+        GameTooltip:SetText(L.GAME_TITLE, 1, 0.82, 0)
+        GameTooltip:AddLine(L.GAME_DESC1, 1, 1, 1, true)
+        GameTooltip:AddLine(L.GAME_DESC2, 0.8, 0.8, 0.8, true)
         GameTooltip:Show()
     end)
     gameIconHolder:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
     local gameSubLabel = rightPage:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     gameSubLabel:SetPoint("TOP", gameIconHolder, "BOTTOM", 0, -15)
-    gameSubLabel:SetText("Breloques Supérieures (jeu)")
+    gameSubLabel:SetText(L.GAME_TITLE)
 
     -- Champ de saisie de la quantité
     local amountLabel = rightPage:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     amountLabel:SetPoint("TOP", gameSubLabel, "BOTTOM", 0, -14)
-    amountLabel:SetText("Quantité à convertir :")
+    amountLabel:SetText(L.AMOUNT_LABEL)
 
     frame.amountBox = CreateFrame("EditBox", nil, rightPage, "InputBoxTemplate")
     frame.amountBox:SetSize(120, 24)
@@ -287,7 +400,7 @@ local function CreateConvertUI()
     local convertButton = CreateFrame("Button", nil, rightPage, "UIPanelButtonTemplate")
     convertButton:SetSize(140, 26)
     convertButton:SetPoint("TOP", frame.amountBox, "BOTTOM", 0, -14)
-    convertButton:SetText("Convertir")
+    convertButton:SetText(L.CONVERTIR)
 
     -- Message de statut (résultat de la dernière tentative de conversion)
     frame.statusText = rightPage:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -306,25 +419,25 @@ local function CreateConvertUI()
         self.elapsed = self.elapsed + elapsed
         if self.elapsed > 8 then
             self:Hide()
-            frame.statusText:SetText("|cFFFF0000Aucune réponse du serveur. Réessayez.|r")
+            frame.statusText:SetText(L.NO_RESPONSE)
         end
     end)
 
     local function AttemptConvert()
         local amount = tonumber(frame.amountBox:GetText())
         if not amount or amount <= 0 then
-            frame.statusText:SetText("|cFFFF0000Entrez une quantité valide.|r")
+            frame.statusText:SetText(L.INVALID_AMOUNT)
             return
         end
         if amount > (frame.siteValue or 0) then
-            frame.statusText:SetText("|cFFFF0000Solde insuffisant. Vous possédez "..tostring(frame.siteValue or 0).." Breloque(s) Supérieure(s) du site.|r")
+            frame.statusText:SetText(string.format(L.INSUFFICIENT_CLIENT, frame.siteValue or 0))
             return
         end
         frame.amountBox:ClearFocus()
-        frame.statusText:SetText("|cFFFFD700Conversion en cours...|r")
+        frame.statusText:SetText(L.CONVERTING)
         frame.timeoutFrame.elapsed = 0
         frame.timeoutFrame:Show()
-        AIO.Handle("ModMeConvert", "RequestConvert", amount)
+        AIO.Handle("ModMeConvert", "RequestConvert", amount, UI_LOCALE)
     end
 
     convertButton:SetScript("OnClick", AttemptConvert)
@@ -335,16 +448,51 @@ local function CreateConvertUI()
     refreshButton:SetSize(150, 28)
     refreshButton:SetPoint("BOTTOM", frame, "BOTTOM", 0, 10)
     refreshButton:SetFrameLevel(metalBorder:GetFrameLevel() + 1)
-    refreshButton:SetText("Actualiser")
+    refreshButton:SetText(L.ACTUALISER)
     refreshButton:SetScript("OnClick", function()
-        AIO.Handle("ModMeConvert", "RequestConvertData")
+        AIO.Handle("ModMeConvert", "RequestConvertData", UI_LOCALE)
     end)
+
+    -- ===================== Onglets "Identité" / "Banque" côte à côte =====================
+    -- Même habillage que les onglets du Journal de Collection
+    -- (CharacterFrameTabButtonTemplate). Ce livre EST le Grimoire de
+    -- Conversion : son onglet "Banque" reste affiché "allumé" (doré, non
+    -- cliquable) ; l'onglet "Identité" est "éteint" (gris) et ferme ce
+    -- livre pour ouvrir le Grimoire d'identité.
+    local identityTab = CreateFrame("Button", "ModMeConvertIdentityTab", metalBorder, "CharacterFrameTabButtonTemplate")
+    identityTab:SetPoint("TOPLEFT", metalBorder, "BOTTOMLEFT", 11, 4)
+    identityTab:SetText(L.IDENTITE)
+
+    local bankTab = CreateFrame("Button", "ModMeConvertBankTab", metalBorder, "CharacterFrameTabButtonTemplate")
+    bankTab:SetPoint("LEFT", identityTab, "RIGHT", -16, 0)
+    bankTab:SetText(L.BANQUE)
+
+    SetupModMeTab(identityTab, false, function()
+        frame:Hide()
+        if ModMeUI.ShowPanel then
+            ModMeUI.ShowPanel()
+        end
+    end)
+    SetupModMeTab(bankTab, true, nil)
 
     ConvertFrame = frame
 
     tinsert(UISpecialFrames, "ModMeConvertFrame")
 
     return frame
+end
+
+-- Point d'entrée "affichage forcé" (jamais un toggle), exposé immédiatement
+-- au chargement du fichier (pas seulement après un premier CreateConvertUI())
+-- pour que l'onglet "Banque" du Grimoire d'identité puisse toujours ouvrir ce
+-- livre, même si ce dernier n'a encore jamais été affiché -- notamment
+-- maintenant que le PNJ 2000040 n'est plus le point d'entrée obligatoire des
+-- deux systèmes.
+ModMeUI.ShowConvert = function()
+    local f = CreateConvertUI()
+    f:Show()
+    f.statusText:SetText("")
+    AIO.Handle("ModMeConvert", "RequestConvertData", UI_LOCALE)
 end
 
 -- Handler pour afficher l'UI (déclenché par le PNJ 2000040 ou la commande /convert)
@@ -355,7 +503,7 @@ function ConvertHandlers.ShowConvertUI()
     else
         frame:Show()
         frame.statusText:SetText("")
-        AIO.Handle("ModMeConvert", "RequestConvertData")
+        AIO.Handle("ModMeConvert", "RequestConvertData", UI_LOCALE)
     end
 end
 
@@ -368,18 +516,29 @@ function ConvertHandlers.UpdateConvertData(player, data)
     end
 end
 
--- Handler pour afficher le résultat d'une tentative de conversion
+-- Handler pour afficher le résultat d'une tentative de conversion. Le
+-- serveur n'envoie plus de texte en dur (voir Mod_Me_ConvertServer.lua) mais
+-- un "code" + les valeurs numeriques necessaires ; c'est ici que le message
+-- est construit dans la langue du client via la table L.
+local CONVERT_RESULT_TEXT = {
+    invalid_amount = function() return L.SRV_INVALID_AMOUNT end,
+    insufficient_balance = function(r) return string.format(L.SRV_INSUFFICIENT, r.dp or 0) end,
+    failed = function() return L.SRV_FAILED end,
+    success_mail = function(r) return string.format(L.SRV_SUCCESS_MAIL, r.amount or 0) end,
+    success_bag = function(r) return string.format(L.SRV_SUCCESS_BAG, r.amount or 0) end,
+}
+
 function ConvertHandlers.ConvertResult(player, result)
     local frame = CreateConvertUI()
     if frame.timeoutFrame then
         frame.timeoutFrame:Hide()
     end
     if result then
+        local builder = CONVERT_RESULT_TEXT[result.code]
+        frame.statusText:SetText(builder and builder(result) or "")
+
         if result.success then
-            frame.statusText:SetText("|cFF00FF00"..tostring(result.message).."|r")
             frame.amountBox:SetText("")
-        else
-            frame.statusText:SetText("|cFFFF0000"..tostring(result.message).."|r")
         end
         if result.dp then
             frame.siteValue = result.dp

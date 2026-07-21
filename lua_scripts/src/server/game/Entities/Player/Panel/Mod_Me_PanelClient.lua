@@ -7,6 +7,115 @@ local PanelHandlers = AIO.AddHandlers("ModMePanel", {})
 local PanelFrame = nil
 local isInitialized = false
 
+-- Table partagee (globale) entre Mod_Me_PanelClient.lua et Mod_Me_ConvertClient.lua :
+-- permet aux onglets "Identite"/"Banque" de chaque livre d'ouvrir l'autre,
+-- sans passer par un aller-retour serveur -- les deux fichiers tournent dans
+-- le meme client, il suffit de s'exposer mutuellement une fonction
+-- d'ouverture "forcee" (pas un toggle).
+_G.ModMeUI = _G.ModMeUI or {}
+local ModMeUI = _G.ModMeUI
+
+-- ===================== Localisation (frFR / enUS) =====================
+-- Detection de la langue du client via l'API native GetLocale() : ce meme
+-- module tourne aussi bien sur un client frFR que enUS (developpement en
+-- cours sur enUS), donc tous les textes d'interface passent par cette table
+-- plutot que d'etre codes en dur en francais. Repli sur frFR pour toute
+-- autre locale (comportement identique a avant pour un client non enUS).
+local UI_LOCALE = (GetLocale and GetLocale() == "enUS") and "enUS" or "frFR"
+
+local L = ({
+    frFR = {
+        TITLE = "Grimoire d'identité",
+        BRELOQUES = "BRELOQUES",
+        SUP_LABEL = "|cFFFFD700Supérieures|r",
+        INF_LABEL = "|cFFC0C0C0Inférieures|r",
+        DP_TITLE = "Breloques supérieures",
+        DP_DESC1 = "Monnaie obtenue en contribuant au serveur.",
+        DP_DESC2 = "S'échange à la banque contre des Breloques supérieures à dépenser dans les zones cosmétiques ou la boutique du jeu.",
+        QUANTITE = "Quantité actuel : ",
+        VP_TITLE = "Breloques inférieures",
+        VP_DESC1 = "Monnaie obtenue en votant pour le serveur.",
+        VP_DESC2 = "Automatiquement convertie en Breloques supérieures à chaque connexion.",
+        COMPTE = "COMPTE",
+        ID_COMPTE = "ID Compte:",
+        NOM_COMPTE = "Nom du compte:",
+        PERSONNAGE = "PERSONNAGE",
+        ID_PERSONNAGE = "ID Personnage:",
+        NOM = "Nom:",
+        ACTUALISER = "Actualiser",
+        IDENTITE = "Identité",
+        BANQUE = "Banque",
+        NIVEAU = "Niveau",
+    },
+    enUS = {
+        TITLE = "Identity Grimoire",
+        BRELOQUES = "CHARMS",
+        SUP_LABEL = "|cFFFFD700Greater|r",
+        INF_LABEL = "|cFFC0C0C0Lesser|r",
+        DP_TITLE = "Greater Charms",
+        DP_DESC1 = "Currency earned by contributing to the server.",
+        DP_DESC2 = "Exchanged at the bank for Greater Charms to spend in cosmetic areas or the in-game shop.",
+        QUANTITE = "Current amount: ",
+        VP_TITLE = "Lesser Charms",
+        VP_DESC1 = "Currency earned by voting for the server.",
+        VP_DESC2 = "Automatically converted into Greater Charms on every login.",
+        COMPTE = "ACCOUNT",
+        ID_COMPTE = "Account ID:",
+        NOM_COMPTE = "Account Name:",
+        PERSONNAGE = "CHARACTER",
+        ID_PERSONNAGE = "Character ID:",
+        NOM = "Name:",
+        ACTUALISER = "Refresh",
+        IDENTITE = "Identity",
+        BANQUE = "Bank",
+        NIVEAU = "Level",
+    },
+})[UI_LOCALE]
+
+-- Couleurs des onglets "Identite"/"Banque" : l'onglet du livre actuellement
+-- ouvert reste "allume" (dore), l'autre est "eteint" (gris) tant qu'on ne
+-- passe pas la souris dessus. La texture de surbrillance native du template
+-- (UI-Character-Tab-RealHighlight) est desactivee au profit de ce simple
+-- changement de couleur : elle s'affichait mal proportionnee (rectangle
+-- bleu) sur ce client.
+local TAB_COLOR_ACTIVE   = { 1, 0.82, 0 }
+local TAB_COLOR_INACTIVE = { 0.6, 0.6, 0.6 }
+local TAB_COLOR_HOVER    = { 1, 0.92, 0.6 }
+
+local function SetupModMeTab(tab, isActive, onClickFn)
+    local hl = tab:GetHighlightTexture()
+    if hl then
+        hl:SetTexture(nil)
+    end
+
+    -- Sur ce client, Button n'expose pas de methode SetTextColor : il faut
+    -- passer par le FontString sous-jacent (toujours valide, quel que soit
+    -- l'etat active/desactive du bouton, car Normal/Highlight/Disabled ne
+    -- sont que des styles appliques a ce meme FontString).
+    local fontString = tab:GetFontString()
+
+    if isActive then
+        PanelTemplates_SelectTab(tab)
+        if fontString then
+            fontString:SetTextColor(unpack(TAB_COLOR_ACTIVE))
+        end
+    else
+        PanelTemplates_DeselectTab(tab)
+        if fontString then
+            fontString:SetTextColor(unpack(TAB_COLOR_INACTIVE))
+        end
+        tab:SetScript("OnEnter", function(self)
+            local fs = self:GetFontString()
+            if fs then fs:SetTextColor(unpack(TAB_COLOR_HOVER)) end
+        end)
+        tab:SetScript("OnLeave", function(self)
+            local fs = self:GetFontString()
+            if fs then fs:SetTextColor(unpack(TAB_COLOR_INACTIVE)) end
+        end)
+        tab:SetScript("OnClick", onClickFn)
+    end
+end
+
 -- Fonction pour créer le panel UI
 local function CreatePanelUI()
     if PanelFrame then
@@ -138,7 +247,7 @@ local function CreatePanelUI()
     -- ===================== Titre (posé sur la barre en bois, plus d'encadré Blizzlike WotLK) =====================
     frame.title = metalBorder:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     frame.title:SetPoint("TOP", metalBorder, "TOP", 0, -17 * SB)
-    frame.title:SetText("Grimoire d'identité")
+    frame.title:SetText(L.TITLE)
 
     -- Icône ronde en haut à gauche (socle prévu par le cadre métallique) : icône de classe du joueur,
     -- avec repli sûr si la classe custom n'a pas d'entrée dans CLASS_ICON_TCOORDS
@@ -219,8 +328,39 @@ local function CreatePanelUI()
     portraitBorder:SetPoint("CENTER", portraitFrame, "CENTER", -72 * (3.3 / 32), -72 * (2 / 32))
     portraitBorder:SetTexCoord(0.000976562, 0.133789, 0.411133, 0.535156)
 
+    -- Tooltip au survol du portrait : nom (colore par classe), niveau/race/
+    -- classe, et guilde si le personnage en a une.
+    portraitFrame:EnableMouse(true)
+    -- Traduction fr : le nom de la race est fourni par le serveur
+    -- (frame.raceName), lu directement dans `auc_spell`.`chrraces` (colonne
+    -- Name3 = frFR, meme convention que chrclasses pour les classes). On ne
+    -- retombe sur UnitRace() que si la donnee serveur n'est pas encore
+    -- arrivee.
+
+    portraitFrame:SetScript("OnEnter", function(self)
+        local name = UnitName("player")
+        local level = UnitLevel("player")
+        local _, classToken = UnitClass("player")
+        local classDisplayName = UnitClass("player")
+        local raceLocalized = UnitRace("player")
+        local raceDisplayName = frame.raceName or raceLocalized
+        local classColor = (RAID_CLASS_COLORS and classToken and RAID_CLASS_COLORS[classToken]) or { r = 1, g = 1, b = 1 }
+
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(name, classColor.r, classColor.g, classColor.b)
+        GameTooltip:AddLine(L.NIVEAU .. " " .. tostring(level) .. " " .. tostring(raceDisplayName) .. " " .. tostring(classDisplayName), 1, 1, 1)
+
+        local guildName = GetGuildInfo("player")
+        if guildName then
+            GameTooltip:AddLine("<" .. guildName .. ">", 0, 1, 0)
+        end
+
+        GameTooltip:Show()
+    end)
+    portraitFrame:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
     -- ===================== Bloc Breloques (page gauche, bas — à la place de Compte) =====================
-    local breloquesHeader, breloquesBorder = CreateSectionHeader(leftPage, "BRELOQUES")
+    local breloquesHeader, breloquesBorder = CreateSectionHeader(leftPage, L.BRELOQUES)
     breloquesHeader:SetPoint("TOP", portraitFrame, "BOTTOM", -60, -30)
 
     -- Slot d'icône avec le cadre "actif" de l'atlas des sorts (même proportion que dans SpellBookItemTemplate)
@@ -252,7 +392,7 @@ local function CreatePanelUI()
     frame.dpLabel:SetWidth(280)
     frame.dpLabel:SetWordWrap(true)
     frame.dpLabel:SetJustifyH("LEFT")
-    frame.dpLabel:SetText("|cFFFFD700Supérieures|r")
+    frame.dpLabel:SetText(L.SUP_LABEL)
 
     -- Le nombre de points s'affiche desormais au survol de l'icone (tooltip) plutot
     -- que directement sur le livre.
@@ -260,12 +400,12 @@ local function CreatePanelUI()
     dpHolder:EnableMouse(true)
     dpHolder:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("Breloques supérieures", 1, 0.82, 0)
-        GameTooltip:AddLine("Monnaie obtenue en contribuant au serveur.", 1, 1, 1, true)
+        GameTooltip:SetText(L.DP_TITLE, 1, 0.82, 0)
+        GameTooltip:AddLine(L.DP_DESC1, 1, 1, 1, true)
 		GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("S'échange à la banque contre des Breloques supérieures à dépenser dans les zones cosmétiques ou la boutique du jeu.", 0.8, 0.8, 0.8, true)
+        GameTooltip:AddLine(L.DP_DESC2, 0.8, 0.8, 0.8, true)
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("Quantité actuel : |cFFFFD700"..tostring(frame.dpValue).."|r", 0.6, 0.6, 0.6)
+        GameTooltip:AddLine(L.QUANTITE.."|cFFFFD700"..tostring(frame.dpValue).."|r", 0.6, 0.6, 0.6)
         GameTooltip:Show()
     end)
     dpHolder:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -276,58 +416,80 @@ local function CreatePanelUI()
     frame.vpLabel:SetWidth(280)
     frame.vpLabel:SetWordWrap(true)
     frame.vpLabel:SetJustifyH("LEFT")
-    frame.vpLabel:SetText("|cFFC0C0C0Inférieures|r")
+    frame.vpLabel:SetText(L.INF_LABEL)
 
     frame.vpValue = 0
     vpHolder:EnableMouse(true)
     vpHolder:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("Breloques inférieures", 1, 0.82, 0)
-        GameTooltip:AddLine("Monnaie obtenue en votant pour le serveur.", 1, 1, 1, true)
+        GameTooltip:SetText(L.VP_TITLE, 1, 0.82, 0)
+        GameTooltip:AddLine(L.VP_DESC1, 1, 1, 1, true)
 		GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("Automatiquement convertie en Breloques supérieures à chaque connexion.", 0.8, 0.8, 0.8, true)
+        GameTooltip:AddLine(L.VP_DESC2, 0.8, 0.8, 0.8, true)
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("Quantité actuel : |cFFC0C0C0"..tostring(frame.vpValue).."|r", 0.6, 0.6, 0.6)
+        GameTooltip:AddLine(L.QUANTITE.."|cFFC0C0C0"..tostring(frame.vpValue).."|r", 0.6, 0.6, 0.6)
         GameTooltip:Show()
     end)
     vpHolder:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
     -- ===================== Bloc Compte (page droite, haut — à la place de Personnage) =====================
-    local compteHeader, compteBorder = CreateSectionHeader(rightPage, "COMPTE")
+    local compteHeader, compteBorder = CreateSectionHeader(rightPage, L.COMPTE)
     compteHeader:SetPoint("TOPLEFT", rightPage, "TOPLEFT", 55, -20)
 
     frame.accountIdLabel = rightPage:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     frame.accountIdLabel:SetPoint("TOPLEFT", compteBorder, "BOTTOMLEFT", 14 * S, -14)
     frame.accountIdLabel:SetJustifyH("LEFT")
-    frame.accountIdLabel:SetText("ID Compte: ")
+    frame.accountIdLabel:SetText(L.ID_COMPTE.." ")
 
     frame.accountNameLabel = rightPage:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     frame.accountNameLabel:SetPoint("TOPLEFT", frame.accountIdLabel, "BOTTOMLEFT", 0, -8)
     frame.accountNameLabel:SetJustifyH("LEFT")
-    frame.accountNameLabel:SetText("Nom du compte: ")
+    frame.accountNameLabel:SetText(L.NOM_COMPTE.." ")
 
     -- ===================== Bloc Personnage (page droite, bas — à la place de Breloques) =====================
-    local personnageHeader, personnageBorder = CreateSectionHeader(rightPage, "PERSONNAGE")
+    local personnageHeader, personnageBorder = CreateSectionHeader(rightPage, L.PERSONNAGE)
     personnageHeader:SetPoint("TOP", frame.accountNameLabel, "BOTTOM", -20, -34)
 
     frame.charIdLabel = rightPage:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     frame.charIdLabel:SetPoint("TOPLEFT", personnageBorder, "BOTTOMLEFT", 14 * S, -14)
     frame.charIdLabel:SetJustifyH("LEFT")
-    frame.charIdLabel:SetText("ID Personnage: ")
+    frame.charIdLabel:SetText(L.ID_PERSONNAGE.." ")
 
     frame.charNameLabel = rightPage:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     frame.charNameLabel:SetPoint("TOPLEFT", frame.charIdLabel, "BOTTOMLEFT", 0, -8)
     frame.charNameLabel:SetJustifyH("LEFT")
-    frame.charNameLabel:SetText("Nom: ")
+    frame.charNameLabel:SetText(L.NOM.." ")
 
-    -- ===================== Bouton Actualiser (remonté pour rester sur le livre) =====================
+    -- ===================== Bouton Actualiser =====================
     local refreshButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
     refreshButton:SetSize(150, 28)
     refreshButton:SetPoint("BOTTOM", frame, "BOTTOM", 0, 10)
     refreshButton:SetFrameLevel(metalBorder:GetFrameLevel() + 1)
-    refreshButton:SetText("Actualiser")
+    refreshButton:SetText(L.ACTUALISER)
     refreshButton:SetScript("OnClick", function()
-        AIO.Handle("ModMePanel", "RequestPanelData")
+        AIO.Handle("ModMePanel", "RequestPanelData", UI_LOCALE)
+    end)
+
+    -- ===================== Onglets "Identité" / "Banque" côte à côte =====================
+    -- Même habillage que les onglets Montures/Familiers/.../Transmogrification
+    -- du Journal de Collection (CharacterFrameTabButtonTemplate). Ce livre EST
+    -- le Grimoire d'identité : son onglet "Identité" reste affiché "allumé"
+    -- (dore, non cliquable) ; l'onglet "Banque" est "éteint" (gris) et ferme
+    -- ce livre pour ouvrir le Grimoire de Conversion.
+    local identityTab = CreateFrame("Button", "ModMePanelIdentityTab", metalBorder, "CharacterFrameTabButtonTemplate")
+    identityTab:SetPoint("TOPLEFT", metalBorder, "BOTTOMLEFT", 11, 4)
+    identityTab:SetText(L.IDENTITE)
+
+    local bankTab = CreateFrame("Button", "ModMePanelBankTab", metalBorder, "CharacterFrameTabButtonTemplate")
+    bankTab:SetPoint("LEFT", identityTab, "RIGHT", -16, 0)
+    bankTab:SetText(L.BANQUE)
+
+    SetupModMeTab(identityTab, true, nil)
+    SetupModMeTab(bankTab, false, function()
+        frame:Hide()
+        if ModMeUI.ShowConvert then
+            ModMeUI.ShowConvert()
+        end
     end)
 
     PanelFrame = frame
@@ -335,6 +497,21 @@ local function CreatePanelUI()
 	tinsert(UISpecialFrames, "ModMePanelFrame")
 
     return frame
+end
+
+-- Point d'entrée "affichage forcé" (jamais un toggle), exposé immédiatement
+-- au chargement du fichier (pas seulement après un premier CreatePanelUI())
+-- pour que l'onglet "Identité" du Grimoire de Conversion puisse toujours
+-- ouvrir ce livre, même si ce dernier n'a encore jamais été affiché --
+-- notamment maintenant que le PNJ 2000040 n'est plus le point d'entrée
+-- obligatoire des deux systèmes.
+ModMeUI.ShowPanel = function()
+    local f = CreatePanelUI()
+    f:Show()
+    if f.portraitTexture then
+        SetPortraitTexture(f.portraitTexture, "player")
+    end
+    AIO.Handle("ModMePanel", "RequestPanelData", UI_LOCALE)
 end
 
 -- Handler pour initialiser le système
@@ -355,7 +532,7 @@ function PanelHandlers.ShowPanel()
         if frame.portraitTexture then
             SetPortraitTexture(frame.portraitTexture, "player")
         end
-        AIO.Handle("ModMePanel", "RequestPanelData")
+        AIO.Handle("ModMePanel", "RequestPanelData", UI_LOCALE)
     end
 end
 
@@ -364,12 +541,13 @@ function PanelHandlers.UpdatePanelData(player, data)
     local frame = CreatePanelUI()
 
     if data then
-        frame.accountIdLabel:SetText("|cFFFFFFFFID Compte:|r |cFF00FF00"..data.accountId.."|r")
-        frame.accountNameLabel:SetText("|cFFFFFFFFNom du compte:|r |cFF00FF00"..data.accountName.."|r")
-        frame.charIdLabel:SetText("|cFFFFFFFFID Personnage:|r |cFF00FF00"..data.charId.."|r")
-        frame.charNameLabel:SetText("|cFFFFFFFFNom:|r |cFF00FF00"..data.charName.."|r")
+        frame.accountIdLabel:SetText("|cFFFFFFFF"..L.ID_COMPTE.."|r |cFF00FF00"..data.accountId.."|r")
+        frame.accountNameLabel:SetText("|cFFFFFFFF"..L.NOM_COMPTE.."|r |cFF00FF00"..data.accountName.."|r")
+        frame.charIdLabel:SetText("|cFFFFFFFF"..L.ID_PERSONNAGE.."|r |cFF00FF00"..data.charId.."|r")
+        frame.charNameLabel:SetText("|cFFFFFFFF"..L.NOM.."|r |cFF00FF00"..data.charName.."|r")
         frame.dpValue = data.dp
         frame.vpValue = data.vp
+        frame.raceName = data.raceName
     end
 end
 

@@ -15,8 +15,48 @@ local function GetPlayerBreloques(player)
     return 0, 0
 end
 
+-- Nom de race localisé : lu directement dans la table chrraces (base
+-- auc_spell) plutot que d'etre traduit en dur cote client. La colonne SQL
+-- depend a la fois du genre (Name* = homme, NameFemale* = femme) et de la
+-- langue du client (Name3/NameFemale3 = frFR, Name1/NameFemale1 = enUS,
+-- meme convention que chrclasses). Couvre donc les races standard et
+-- toutes les races custom du serveur, sans liste a maintenir a la main.
+-- gender: 0 = homme, 1 = femme (Eluna Player:GetGender()).
+-- locale: "frFR" ou "enUS" (envoyee par le client via GetLocale()).
+--
+-- On lit TOUJOURS les deux colonnes (masculin + féminin) de la locale
+-- demandée et on ne garde le nom féminin que s'il est réellement rempli :
+-- la colonne NameFemale* n'a été traduite en base que pour le frFR (comme
+-- montré dans tes captures) -- côté enUS elle est vide pour la plupart des
+-- races, y compris les standards. Sans ce repli, un personnage féminin en
+-- client enUS se retrouvait avec un nom de race vide au lieu d'utiliser le
+-- nom de base ("Human", etc.).
+local function GetRaceName(raceId, gender, locale)
+    local isFemale = (gender == 1)
+    local maleColumn, femaleColumn
+    if locale == "enUS" then
+        maleColumn, femaleColumn = "Name1", "NameFemale1"
+    else
+        maleColumn, femaleColumn = "Name3", "NameFemale3"
+    end
+
+    local result = CharDBQuery('SELECT '..maleColumn..', '..femaleColumn..' FROM `auc_spell`.`chrraces` WHERE ID = '..tonumber(raceId or 0)..' LIMIT 1')
+    if not result then
+        return nil
+    end
+
+    local maleName = result:GetString(0)
+    local femaleName = result:GetString(1)
+
+    if isFemale and femaleName and femaleName ~= "" then
+        return femaleName
+    end
+
+    return maleName
+end
+
 -- Handler pour demander les données du panel
-function PanelHandlers.RequestPanelData(player)
+function PanelHandlers.RequestPanelData(player, locale)
     local vp, dp = GetPlayerBreloques(player)
     
     local data = {
@@ -25,7 +65,8 @@ function PanelHandlers.RequestPanelData(player)
         charId = player:GetGUIDLow(),
         charName = player:GetName(),
         vp = vp,
-        dp = dp
+        dp = dp,
+        raceName = GetRaceName(player:GetRace(), player:GetGender(), locale)
     }
     
     AIO.Handle(player, "ModMePanel", "UpdatePanelData", data)

@@ -40,7 +40,21 @@ end
 -- calculés via MAX(...)+1, ce qui est la méthode communément utilisée dans les
 -- scripts Eluna mais n'est pas garanti à 100% contre une collision en cas
 -- d'écriture concurrente. À vérifier en conditions réelles sur le serveur.
-local function SendItemByMail(player, itemEntry, count)
+-- Textes du courrier de secours (sacs pleins), localisés selon la langue du
+-- client au moment de la demande de conversion (envoyée par le client, voir
+-- ConvertHandlers.RequestConvert ci-dessous).
+local MAIL_TEXT = {
+    frFR = {
+        subject = "Conversion de Breloques",
+        body = "Voici votre/vos Breloque(s) Superieure(s) issue(s) de la conversion. Votre inventaire etait plein au moment de la conversion.",
+    },
+    enUS = {
+        subject = "Charm Conversion",
+        body = "Here is/are your Greater Charm(s) from the conversion. Your bags were full at the time of the conversion.",
+    },
+}
+
+local function SendItemByMail(player, itemEntry, count, locale)
     local guidResult = CharDBQuery("SELECT MAX(guid) FROM item_instance;")
     local newItemGuid = 1
     if guidResult and not guidResult:IsNull(0) then
@@ -53,9 +67,10 @@ local function SendItemByMail(player, itemEntry, count)
         newMailId = mailIdResult:GetUInt32(0) + 1
     end
 
+    local texts = MAIL_TEXT[locale] or MAIL_TEXT.frFR
     local receiverGuid = player:GetGUIDLow()
-    local subject = "Conversion de Breloques"
-    local body = "Voici votre/vos Breloque(s) Superieure(s) issue(s) de la conversion. Votre inventaire etait plein au moment de la conversion."
+    local subject = texts.subject
+    local body = texts.body
     local expireTime = os.time() + (MAIL_EXPIRE_DAYS * 24 * 60 * 60)
     local deliverTime = os.time()
 
@@ -81,18 +96,33 @@ end
 
 -- ===================== Handlers AIO =====================
 
-function ConvertHandlers.RequestConvertData(player)
+-- locale ("frFR"/"enUS", envoyee par le client via GetLocale()) : conservee
+-- ici uniquement pour le texte du courrier de secours (sacs pleins), car les
+-- messages de statut affiches dans l'UI sont desormais construits cote
+-- client a partir d'un "code" (voir ConvertHandlers.ConvertResult dans
+-- Mod_Me_ConvertClient.lua) plutot que d'un texte en dur envoye par le
+-- serveur.
+local PlayerLocale = {}
+
+function ConvertHandlers.RequestConvertData(player, locale)
+    if locale then
+        PlayerLocale[player:GetGUIDLow()] = locale
+    end
     local dp = GetPlayerDP(player)
     AIO.Handle(player, "ModMeConvert", "UpdateConvertData", { dp = dp })
 end
 
-function ConvertHandlers.RequestConvert(player, amount)
+function ConvertHandlers.RequestConvert(player, amount, locale)
     amount = tonumber(amount)
+    if locale then
+        PlayerLocale[player:GetGUIDLow()] = locale
+    end
+    local playerLocale = locale or PlayerLocale[player:GetGUIDLow()]
 
     if not amount or amount ~= math.floor(amount) or amount <= 0 then
         AIO.Handle(player, "ModMeConvert", "ConvertResult", {
             success = false,
-            message = "Quantite invalide.",
+            code = "invalid_amount",
         })
         return
     end
@@ -103,7 +133,7 @@ function ConvertHandlers.RequestConvert(player, amount)
     if amount > currentDP then
         AIO.Handle(player, "ModMeConvert", "ConvertResult", {
             success = false,
-            message = "Solde insuffisant. Vous possedez "..currentDP.." Breloque(s) Superieure(s) du site.",
+            code = "insufficient_balance",
             dp = currentDP,
         })
         return
@@ -123,7 +153,7 @@ function ConvertHandlers.RequestConvert(player, amount)
     else
         -- Sacs pleins (ou autre échec) : envoi par courrier, conformément au
         -- choix explicite de l'utilisateur.
-        viaMail = SendItemByMail(player, CONVERT_ITEM_ID, amount)
+        viaMail = SendItemByMail(player, CONVERT_ITEM_ID, amount, playerLocale)
         granted = viaMail
     end
 
@@ -133,7 +163,7 @@ function ConvertHandlers.RequestConvert(player, amount)
         CharDBExecute('UPDATE `auc_website`.`users` SET dp = dp + '..amount..' WHERE username = "'..player:GetAccountName()..'";')
         AIO.Handle(player, "ModMeConvert", "ConvertResult", {
             success = false,
-            message = "La conversion a echoue. Aucun point n'a ete debite.",
+            code = "failed",
             dp = currentDP,
         })
         return
@@ -141,16 +171,10 @@ function ConvertHandlers.RequestConvert(player, amount)
 
     CharDBExecute('INSERT IGNORE INTO auc_eluna.mod_me_shop_logs VALUES ('..player:GetGUIDLow()..', "'..os.date()..'", "Conversion Breloques Superieures (site -> jeu) x'..amount..'", 1)')
 
-    local message
-    if viaMail then
-        message = "Conversion reussie ! "..amount.." Breloque(s) Superieure(s) envoyee(s) par courrier (sacs pleins)."
-    else
-        message = "Conversion reussie ! "..amount.." Breloque(s) Superieure(s) ajoutee(s) a votre inventaire."
-    end
-
     AIO.Handle(player, "ModMeConvert", "ConvertResult", {
         success = true,
-        message = message,
+        code = viaMail and "success_mail" or "success_bag",
+        amount = amount,
         dp = newDP,
     })
 end
