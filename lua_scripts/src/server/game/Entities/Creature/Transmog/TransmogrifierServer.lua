@@ -4,6 +4,54 @@
 local AIO = AIO or require("AIO")
 local TransmogHandlers = AIO.AddHandlers("Transmog", {})
 
+-- Détermine la langue du compte du joueur (0 = enUS, sinon frFR)
+local function GetPlayerLocale(player)
+    local ok, result = pcall(function()
+        local accountId = player:GetAccountId()
+        local q = AuthDBQuery("SELECT locale FROM account WHERE id = " .. accountId .. ";")
+        if q then
+            local localeId = q:GetUInt8(0)
+            if localeId == 0 then
+                return "enUS"
+            end
+        end
+        return "frFR"
+    end)
+    if ok and result then
+        return result
+    end
+    return "frFR"
+end
+
+local TransmogNotif = {
+    frFR = {
+        INVALID_SLOT = "Slot invalide!",
+        NO_ITEM_EQUIPPED = "Aucun item équipé dans ce slot!",
+        NOT_COMPATIBLE = "Cet item n'est pas compatible avec ce slot!",
+        ITEM_NOT_IN_BAGS = "Vous ne possédez pas cet item dans vos sacs!",
+        NOT_ENOUGH_MONEY = "Vous n'avez pas assez d'argent! Coût: 50 pièces d'or",
+        NO_APPEARANCE = "Impossible d'obtenir l'apparence de cet item!",
+        APPLY_SUCCESS = "Transmogrification appliquée avec succès!",
+        SLOT_RESET = "Slot réinitialisé!",
+        ALL_RESET = "Toutes les transmogrifications réinitialisées!",
+    },
+    enUS = {
+        INVALID_SLOT = "Invalid slot!",
+        NO_ITEM_EQUIPPED = "No item equipped in this slot!",
+        NOT_COMPATIBLE = "This item is not compatible with this slot!",
+        ITEM_NOT_IN_BAGS = "You don't have this item in your bags!",
+        NOT_ENOUGH_MONEY = "You don't have enough money! Cost: 50 gold",
+        NO_APPEARANCE = "Unable to retrieve this item's appearance!",
+        APPLY_SUCCESS = "Transmogrification applied successfully!",
+        SLOT_RESET = "Slot reset!",
+        ALL_RESET = "All transmogrifications reset!",
+    },
+}
+
+local function L(player)
+    return TransmogNotif[GetPlayerLocale(player)] or TransmogNotif.frFR
+end
+
 local TRANSMOG_COST = 500000 -- 4 pièces d'or (1 or = 10000 copper)
 local TRANSMOG_TABLE = "transmog_char"
 local ITEMS_PER_PAGE = 8
@@ -337,20 +385,20 @@ end
 -- Handler: Appliquer une transmogrification
 function TransmogHandlers.ApplyTransmog(player, slotId, itemEntry)
     if not EQUIPMENT_SLOTS[slotId] then
-        AIO.Handle(player, "Transmog", "ShowError", "Slot invalide!")
+        AIO.Handle(player, "Transmog", "ShowError", L(player).INVALID_SLOT)
         return
     end
     
     -- Vérifier que le joueur a un item équipé dans ce slot
     local equippedItem = player:GetItemByPos(255, slotId - 1)
     if not equippedItem then
-        AIO.Handle(player, "Transmog", "ShowError", "Aucun item équipé dans ce slot!")
+        AIO.Handle(player, "Transmog", "ShowError", L(player).NO_ITEM_EQUIPPED)
         return
     end
     
     -- Vérifier que l'item est compatible
     if not IsItemCompatible(itemEntry, slotId) then
-        AIO.Handle(player, "Transmog", "ShowError", "Cet item n'est pas compatible avec ce slot!")
+        AIO.Handle(player, "Transmog", "ShowError", L(player).NOT_COMPATIBLE)
         return
     end
     
@@ -385,21 +433,21 @@ function TransmogHandlers.ApplyTransmog(player, slotId, itemEntry)
     end
     
     if not hasItem then
-        AIO.Handle(player, "Transmog", "ShowError", "Vous ne possédez pas cet item dans vos sacs!")
+        AIO.Handle(player, "Transmog", "ShowError", L(player).ITEM_NOT_IN_BAGS)
         return
     end
 
 	-- NOUVEAU : Vérifier si le joueur a assez d'argent
     local playerMoney = player:GetCoinage()
     if playerMoney < TRANSMOG_COST then
-        AIO.Handle(player, "Transmog", "ShowError", "Vous n'avez pas assez d'argent! Coût: 4 pièces d'or")
+        AIO.Handle(player, "Transmog", "ShowError", L(player).NOT_ENOUGH_MONEY)
         return
     end
     
     -- Obtenir le Display ID (juste pour le log debug)
     local displayId = GetItemDisplayId(itemEntry)
     if displayId == 0 then
-        AIO.Handle(player, "Transmog", "ShowError", "Impossible d'obtenir l'apparence de cet item!")
+        AIO.Handle(player, "Transmog", "ShowError", L(player).NO_APPEARANCE)
         return
     end
 
@@ -412,7 +460,7 @@ function TransmogHandlers.ApplyTransmog(player, slotId, itemEntry)
     SaveTransmog(player:GetGUIDLow(), slotId, itemEntry)
     ApplyTransmogVisual(player, slotId, itemEntry)
     
-    AIO.Handle(player, "Transmog", "ShowSuccess", "Transmogrification appliquée avec succès!")
+    AIO.Handle(player, "Transmog", "ShowSuccess", L(player).APPLY_SUCCESS)
     AIO.Handle(player, "Transmog", "UpdateAppliedAppearances", BuildAppliedAppearances(player:GetGUIDLow()))
     
     --print(string.format(">> %s transmogged slot %d to item %d (display %d)", 
@@ -428,7 +476,7 @@ function TransmogHandlers.ResetSlot(player, slotId)
     DeleteTransmog(player:GetGUIDLow(), slotId)
     RestoreOriginalVisual(player, slotId)
     
-    AIO.Handle(player, "Transmog", "ShowSuccess", "Slot réinitialisé!")
+    AIO.Handle(player, "Transmog", "ShowSuccess", L(player).SLOT_RESET)
     AIO.Handle(player, "Transmog", "UpdateAppliedAppearances", BuildAppliedAppearances(player:GetGUIDLow()))
 end
 
@@ -441,7 +489,7 @@ function TransmogHandlers.ResetAll(player)
         RestoreOriginalVisual(player, slotId)
     end
     
-    AIO.Handle(player, "Transmog", "ShowSuccess", "Toutes les transmogrifications réinitialisées!")
+    AIO.Handle(player, "Transmog", "ShowSuccess", L(player).ALL_RESET)
     AIO.Handle(player, "Transmog", "UpdateAppliedAppearances", BuildAppliedAppearances(player:GetGUIDLow()))
 end
 

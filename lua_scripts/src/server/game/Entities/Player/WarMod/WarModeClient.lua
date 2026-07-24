@@ -3,6 +3,39 @@ if AIO.AddAddon() then return end
 
 local WarModeHandlers = AIO.AddHandlers("WarMode", {})
 
+local UI_LOCALE = (GetLocale and GetLocale() == "enUS") and "enUS" or "frFR"
+
+local Locales = {
+    frFR = {
+        TITLE = "Mode Guerre",
+        STATUS_LABEL_DISABLED = "Statut: |cffff0000Désactivé|r",
+        STATUS_LABEL_ENABLED = "Statut: |cff00ff00Activé|r",
+        DESC_TITLE = "Bonus du Mode Guerre",
+        BONUS_XP = "|cff00ff00+10%|r Expérience",
+        BONUS_GOLD = "|cff00ff00+10%|r Or des loots",
+        WARNING = "|cffff9900Attention:|r Activer le mode guerre vous rendra PvP en permanence dans le monde ouvert.",
+        BTN_DISABLE = "Désactiver",
+        BTN_ENABLE = "Activer",
+        CHAT_PREFIX = "[Mode Guerre]",
+        ENABLED_CHAT_MSG = "|cFF00FF00Mode Guerre activé:|r Bonus d'XP et d'or de 10%.",
+    },
+    enUS = {
+        TITLE = "War Mode",
+        STATUS_LABEL_DISABLED = "Status: |cffff0000Disabled|r",
+        STATUS_LABEL_ENABLED = "Status: |cff00ff00Enabled|r",
+        DESC_TITLE = "War Mode Bonuses",
+        BONUS_XP = "|cff00ff00+10%|r Experience",
+        BONUS_GOLD = "|cff00ff00+10%|r Loot Gold",
+        WARNING = "|cffff9900Warning:|r Activating War Mode will flag you as permanently PvP-enabled in the open world.",
+        BTN_DISABLE = "Disable",
+        BTN_ENABLE = "Enable",
+        CHAT_PREFIX = "[War Mode]",
+        ENABLED_CHAT_MSG = "|cFF00FF00War Mode enabled:|r 10% XP and gold bonus.",
+    },
+}
+
+local L = Locales[UI_LOCALE] or Locales.frFR
+
 local WarModeFrame = nil
 local isInitialized = false
 local isWarModeActive = false
@@ -64,7 +97,7 @@ local function CreateWarModeFrame()
     -- Titre
     frame.title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     frame.title:SetPoint("CENTER", header, "CENTER", 0, 12)
-    frame.title:SetText("Mode Guerre")
+    frame.title:SetText(L.TITLE)
 
     -- Bouton de fermeture
     local xButton = CreateFrame("Button", nil, frame)
@@ -110,7 +143,7 @@ local function CreateWarModeFrame()
     frame.statusLabel = content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     frame.statusLabel:SetPoint("TOP", iconHolder, "BOTTOM", 0, -14)
     frame.statusLabel:SetShadowOffset(1, -1)
-    frame.statusLabel:SetText("Statut: |cffff0000Désactivé|r")
+    frame.statusLabel:SetText(L.STATUS_LABEL_DISABLED)
 
     -- Ligne de séparation (simple bande de couleur unie, pas de texture décorative étirée)
     local midDivider = content:CreateTexture(nil, "ARTWORK")
@@ -123,7 +156,7 @@ local function CreateWarModeFrame()
     -- Description
     frame.descTitle = content:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     frame.descTitle:SetPoint("TOP", midDivider, "BOTTOM", 0, -10)
-    frame.descTitle:SetText("Bonus du Mode Guerre")
+    frame.descTitle:SetText(L.DESC_TITLE)
 
     -- Ligne bonus XP (icône + texte)
     local xpRow = CreateFrame("Frame", nil, content)
@@ -138,7 +171,7 @@ local function CreateWarModeFrame()
 
     frame.bonusXP = xpRow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     frame.bonusXP:SetPoint("LEFT", xpIcon, "RIGHT", 6, 0)
-    frame.bonusXP:SetText("|cff00ff00+10%|r Expérience")
+    frame.bonusXP:SetText(L.BONUS_XP)
 
     -- Ligne bonus Or (icône + texte)
     local goldRow = CreateFrame("Frame", nil, content)
@@ -153,7 +186,7 @@ local function CreateWarModeFrame()
 
     frame.bonusGold = goldRow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     frame.bonusGold:SetPoint("LEFT", goldIcon, "RIGHT", 6, 0)
-    frame.bonusGold:SetText("|cff00ff00+10%|r Or des loots")
+    frame.bonusGold:SetText(L.BONUS_GOLD)
 
     -- Encadré d'avertissement PvP (backdrop tooltip standard, combo confirmé dans le FrameXML Blizzard)
     local warnFrame = CreateFrame("Frame", nil, content)
@@ -172,7 +205,7 @@ local function CreateWarModeFrame()
     frame.warning:SetWidth(280)
     frame.warning:SetWordWrap(true)
     frame.warning:SetJustifyH("CENTER")
-    frame.warning:SetText("|cffff9900Attention:|r Activer le mode guerre vous rendra PvP en permanence dans le monde ouvert.")
+    frame.warning:SetText(L.WARNING)
 
     -- Bouton Activer/Désactiver
     frame.toggleButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
@@ -204,14 +237,14 @@ local function UpdateDisplay()
     if not WarModeFrame then return end
 
     if isWarModeActive then
-        WarModeFrame.statusLabel:SetText("Statut: |cff00ff00Activé|r")
-        WarModeFrame.toggleButton:SetText("Désactiver")
+        WarModeFrame.statusLabel:SetText(L.STATUS_LABEL_ENABLED)
+        WarModeFrame.toggleButton:SetText(L.BTN_DISABLE)
         WarModeFrame.icon:SetDesaturated(false)
         WarModeFrame.pvpBadge:Show()
         WarModeFrame.iconHolder:SetBackdropBorderColor(GetFactionColor())
     else
-        WarModeFrame.statusLabel:SetText("Statut: |cffff0000Désactivé|r")
-        WarModeFrame.toggleButton:SetText("Activer")
+        WarModeFrame.statusLabel:SetText(L.STATUS_LABEL_DISABLED)
+        WarModeFrame.toggleButton:SetText(L.BTN_ENABLE)
         WarModeFrame.icon:SetDesaturated(true)
         WarModeFrame.pvpBadge:Hide()
         WarModeFrame.iconHolder:SetBackdropBorderColor(1, 1, 1, 1)
@@ -228,7 +261,7 @@ function WarModeHandlers.Initialize(player, active)
     isWarModeActive = active
 
     if active then
-        print("|cFF00FF00Mode Guerre activé:|r Bonus d'XP et d'or de 10%.")
+        print(L.ENABLED_CHAT_MSG)
     end
 end
 
@@ -254,9 +287,9 @@ end
 -- Handler pour afficher un message
 function WarModeHandlers.ShowMessage(player, message, isError)
     if isError then
-        DEFAULT_CHAT_FRAME:AddMessage("|cFFFF0000[Mode Guerre]|r " .. message)
+        DEFAULT_CHAT_FRAME:AddMessage("|cFFFF0000" .. L.CHAT_PREFIX .. "|r " .. message)
     else
-        DEFAULT_CHAT_FRAME:AddMessage("|cFF00FF00[Mode Guerre]|r " .. message)
+        DEFAULT_CHAT_FRAME:AddMessage("|cFF00FF00" .. L.CHAT_PREFIX .. "|r " .. message)
     end
 end
 

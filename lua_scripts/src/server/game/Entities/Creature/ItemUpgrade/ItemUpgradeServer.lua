@@ -3,6 +3,54 @@ local AIO = AIO or require("AIO")
 
 local ItemUpgradeHandlers = AIO.AddHandlers("ItemUpgrade", {})
 
+-- Détermine la langue du compte du joueur (0 = enUS, sinon frFR)
+local function GetPlayerLocale(player)
+    local ok, result = pcall(function()
+        local accountId = player:GetAccountId()
+        local q = AuthDBQuery("SELECT locale FROM account WHERE id = " .. accountId .. ";")
+        if q then
+            local localeId = q:GetUInt8(0)
+            if localeId == 0 then
+                return "enUS"
+            end
+        end
+        return "frFR"
+    end)
+    if ok and result then
+        return result
+    end
+    return "frFR"
+end
+
+local ItemUpgradeNotif = {
+    frFR = {
+        CANT_UPGRADE = "Cet objet ne peut pas être amélioré !",
+        ITEM_NOT_IN_BAGS = "Objet introuvable dans votre inventaire !",
+        GEAR_ONLY = "Vous ne pouvez améliorer que des équipements !",
+        LOAD_ERROR = "Erreur lors du chargement des données !",
+        ALREADY_MAX_TIER = "Cet objet est déjà au palier maximum !",
+        ITEM_NOT_FOUND = "Objet introuvable !",
+        NOT_ENOUGH_GOLD = "Vous n\226\128\153avez pas assez de pièces d\226\128\153or ! %d pièces d\226\128\153or sont requises pour passer au palier suivant.",
+        ALREADY_OWN_UNIQUE = "Vous possédez déjà l\226\128\153équipement unique.",
+        UPGRADE_SUCCESS = "Équipement amélioré en %s ! (Coût : %d Pièces d'or)",
+    },
+    enUS = {
+        CANT_UPGRADE = "This item cannot be upgraded!",
+        ITEM_NOT_IN_BAGS = "Item not found in your inventory!",
+        GEAR_ONLY = "You can only upgrade gear!",
+        LOAD_ERROR = "Error while loading data!",
+        ALREADY_MAX_TIER = "This item is already at the maximum tier!",
+        ITEM_NOT_FOUND = "Item not found!",
+        NOT_ENOUGH_GOLD = "You don't have enough gold! %d gold is required to upgrade to the next tier.",
+        ALREADY_OWN_UNIQUE = "You already own this unique piece of gear.",
+        UPGRADE_SUCCESS = "Gear upgraded to %s! (Cost: %d gold)",
+    },
+}
+
+local function L(player)
+    return ItemUpgradeNotif[GetPlayerLocale(player)] or ItemUpgradeNotif.frFR
+end
+
 -- Configuration
 local TIER_UPGRADE_COST = 5000 * 10000 -- 5000 gold pour passer au palier suivant
 
@@ -140,20 +188,20 @@ function ItemUpgradeHandlers.SelectItem(player, itemEntry)
     local customInfo = LoadCustomItemInfo(itemEntry)
     
     if not customInfo then
-        AIO.Handle(player, "ItemUpgrade", "ShowMessage", "Cet objet ne peut pas être amélioré !")
+        AIO.Handle(player, "ItemUpgrade", "ShowMessage", L(player).CANT_UPGRADE)
         return
     end
     
     local item = player:GetItemByEntry(itemEntry)
     
     if not item then
-        AIO.Handle(player, "ItemUpgrade", "ShowMessage", "Objet introuvable dans votre inventaire !")
+        AIO.Handle(player, "ItemUpgrade", "ShowMessage", L(player).ITEM_NOT_IN_BAGS)
         return
     end
     
     local itemClass = item:GetClass()
     if itemClass ~= 2 and itemClass ~= 4 then
-        AIO.Handle(player, "ItemUpgrade", "ShowMessage", "Vous ne pouvez améliorer que des équipements !")
+        AIO.Handle(player, "ItemUpgrade", "ShowMessage", L(player).GEAR_ONLY)
         return
     end
     
@@ -164,7 +212,7 @@ function ItemUpgradeHandlers.SelectItem(player, itemEntry)
     ))
     
     if not query then
-        AIO.Handle(player, "ItemUpgrade", "ShowMessage", "Erreur lors du chargement des données !")
+        AIO.Handle(player, "ItemUpgrade", "ShowMessage", L(player).LOAD_ERROR)
         return
     end
     
@@ -172,16 +220,19 @@ function ItemUpgradeHandlers.SelectItem(player, itemEntry)
     local itemQuality = query:GetUInt32(1)
     local itemLevel = query:GetUInt32(2)
     
-    -- Récupérer le nom traduit en français
-    local localeQuery = WorldDBQuery(string.format(
-        "SELECT Name FROM item_template_locale WHERE ID = %d AND locale = 'frFR'",
-        itemEntry
-    ))
-    
-    if localeQuery then
-        local localeName = localeQuery:GetString(0)
-        if localeName and localeName ~= "" then
-            itemName = localeName
+    -- Récupérer le nom traduit en français (uniquement pour les joueurs frFR :
+    -- item_template contient déjà le nom anglais de base pour les joueurs enUS)
+    if GetPlayerLocale(player) == "frFR" then
+        local localeQuery = WorldDBQuery(string.format(
+            "SELECT Name FROM item_template_locale WHERE ID = %d AND locale = 'frFR'",
+            itemEntry
+        ))
+        
+        if localeQuery then
+            local localeName = localeQuery:GetString(0)
+            if localeName and localeName ~= "" then
+                itemName = localeName
+            end
         end
     end
     
@@ -279,16 +330,18 @@ function ItemUpgradeHandlers.SelectItem(player, itemEntry)
             local nextItemQuality = nextQuery:GetUInt32(1)
             local nextItemLevel = nextQuery:GetUInt32(2)
             
-            -- Récupérer le nom traduit en français pour le palier suivant
-            local nextLocaleQuery = WorldDBQuery(string.format(
-                "SELECT Name FROM item_template_locale WHERE ID = %d AND locale = 'frFR'",
-                customInfo.nextTierItemId
-            ))
-            
-            if nextLocaleQuery then
-                local nextLocaleName = nextLocaleQuery:GetString(0)
-                if nextLocaleName and nextLocaleName ~= "" then
-                    nextItemName = nextLocaleName
+            -- Récupérer le nom traduit en français pour le palier suivant (idem : seulement frFR)
+            if GetPlayerLocale(player) == "frFR" then
+                local nextLocaleQuery = WorldDBQuery(string.format(
+                    "SELECT Name FROM item_template_locale WHERE ID = %d AND locale = 'frFR'",
+                    customInfo.nextTierItemId
+                ))
+                
+                if nextLocaleQuery then
+                    local nextLocaleName = nextLocaleQuery:GetString(0)
+                    if nextLocaleName and nextLocaleName ~= "" then
+                        nextItemName = nextLocaleName
+                    end
                 end
             end
             
@@ -383,19 +436,19 @@ function ItemUpgradeHandlers.UpgradeTier(player, itemEntry)
     local customInfo = LoadCustomItemInfo(itemEntry)
     
     if not customInfo then
-        AIO.Handle(player, "ItemUpgrade", "ShowMessage", "Cet objet ne peut pas être amélioré !")
+        AIO.Handle(player, "ItemUpgrade", "ShowMessage", L(player).CANT_UPGRADE)
         return
     end
     
     -- Vérifier s'il y a un palier suivant
     if not customInfo.nextTierItemId or customInfo.nextTierItemId == 0 then
-        AIO.Handle(player, "ItemUpgrade", "ShowMessage", "Cet objet est déjà au palier maximum !")
+        AIO.Handle(player, "ItemUpgrade", "ShowMessage", L(player).ALREADY_MAX_TIER)
         return
     end
     
     local item = player:GetItemByEntry(itemEntry)
     if not item then
-        AIO.Handle(player, "ItemUpgrade", "ShowMessage", "Objet introuvable !")
+        AIO.Handle(player, "ItemUpgrade", "ShowMessage", L(player).ITEM_NOT_FOUND)
         return
     end
     
@@ -403,7 +456,7 @@ function ItemUpgradeHandlers.UpgradeTier(player, itemEntry)
     if player:GetCoinage() < TIER_UPGRADE_COST then
         local goldNeeded = math.floor(TIER_UPGRADE_COST / 10000)
         AIO.Handle(player, "ItemUpgrade", "ShowMessage", 
-            string.format("Vous n’avez pas assez de pièces d’or ! %d pièces d’or sont requises pour passer au palier suivant.", goldNeeded))
+            string.format(L(player).NOT_ENOUGH_GOLD, goldNeeded))
         return
     end
     
@@ -414,7 +467,7 @@ function ItemUpgradeHandlers.UpgradeTier(player, itemEntry)
     local newItem = player:AddItem(customInfo.nextTierItemId, 1)
     
     if not newItem then
-        AIO.Handle(player, "ItemUpgrade", "ShowMessage", "Vous possédez déjà l’équipement unique.")
+        AIO.Handle(player, "ItemUpgrade", "ShowMessage", L(player).ALREADY_OWN_UNIQUE)
         -- Rendre l'ancien item en cas d'erreur
         player:AddItem(itemEntry, 1)
         return
@@ -427,7 +480,7 @@ function ItemUpgradeHandlers.UpgradeTier(player, itemEntry)
     local nextCustomInfo = LoadCustomItemInfo(customInfo.nextTierItemId)
     
     AIO.Handle(player, "ItemUpgrade", "ShowMessage", 
-        string.format("Équipement amélioré en %s ! (Coût : %d Pièces d'or)", nextCustomInfo.tier, goldSpent))
+        string.format(L(player).UPGRADE_SUCCESS, nextCustomInfo.tier, goldSpent))
     
     -- IMPORTANT : Rafraîchir l'UI avec le nouvel item au lieu de fermer
     ItemUpgradeHandlers.SelectItem(player, customInfo.nextTierItemId)

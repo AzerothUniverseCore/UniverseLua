@@ -12,6 +12,24 @@ end
 local WarchiefCommandAllianceHandlers = AIO.AddHandlers("WarchiefCommandAllianceHandler", {})
 
 -- ------------------------------------------------------------
+--  Locale (bilingue frFR / enUS, repli sur frFR)
+-- ------------------------------------------------------------
+local UI_LOCALE = (GetLocale and GetLocale() == "enUS") and "enUS" or "frFR"
+local WarchiefLocales = {
+    frFR = {
+        MAIN_TITLE   = "Le chef de guerre a besoin de vous ! Prenez un dépliant.",
+        EMPTY_STATE  = "Vous avez accompli toutes les missions disponibles.\nRevenez plus tard !",
+        DEFAULT_BTN  = "Aller",
+    },
+    enUS = {
+        MAIN_TITLE   = "The Warchief needs you! Take a flyer.",
+        EMPTY_STATE  = "You have completed all available missions.\nCome back later!",
+        DEFAULT_BTN  = "Go",
+    },
+}
+local WarchiefL = WarchiefLocales[UI_LOCALE] or WarchiefLocales.frFR
+
+-- ------------------------------------------------------------
 --  Configuration visuelle — calée sur CaptureH.PNG
 --  Fond : hordebfamissionframeUITemplate.blp (612×600)
 -- ------------------------------------------------------------
@@ -107,7 +125,7 @@ local function EnsureMainFrame()
     mainTitle:SetWidth(480)
     mainTitle:SetJustifyH("CENTER")
     --mainTitle:SetTextColor(1, 0.9, 0.7, 1)
-    mainTitle:SetText("Le chef de guerre a besoin de vous ! Prenez un dépliant.")
+    mainTitle:SetText(WarchiefL.MAIN_TITLE)
 
     -- Bouton fermer
     local closeBtn = CreateFrame("Button", nil, WarchiefBoardFrame, "UIPanelCloseButton")
@@ -195,7 +213,7 @@ local function BuildFlyerColumn(flyer, colIndex)
     btn:SetSize(BTN_W, 26)
     -- Ancrage au centre de la colonne pour un centrage parfait
     btn:SetPoint("TOP", frame, "TOPLEFT", btnCx, BUTTON_Y)
-    btn:SetText(flyer.buttonLabel or "Aller")
+    btn:SetText(flyer.buttonLabel or WarchiefL.DEFAULT_BTN)
 
     local questId = flyer.questId
     btn:SetScript("OnClick", function()
@@ -205,14 +223,17 @@ local function BuildFlyerColumn(flyer, colIndex)
     table.insert(activeFlyerWidgets, btn)
 end
 
-local function ShowEmptyState(message)
+-- ------------------------------------------------------------
+--  État vide — toutes missions accomplies
+-- ------------------------------------------------------------
+local function ShowEmptyState()
     local fs = WarchiefBoardFrame:CreateFontString(nil, "OVERLAY")
     fs:SetFont("Fonts\\FRIZQT__.TTF", 13, "OUTLINE")
     fs:SetPoint("CENTER", WarchiefBoardFrame, "CENTER", 0, -30)
     fs:SetWidth(400)
     fs:SetJustifyH("CENTER")
     fs:SetTextColor(0.9, 0.75, 0.3, 1)
-    fs:SetText(message or "Vous avez accompli toutes les missions disponibles.\nRevenez plus tard !")
+    fs:SetText(WarchiefL.EMPTY_STATE)
     table.insert(activeFlyerWidgets, fs)
 end
 
@@ -226,8 +247,7 @@ function WarchiefCommandAllianceHandlers.OpenInterface(player, count, ...)
     count = tonumber(count) or 0
 
     if count == 0 then
-        local emptyArgs = { ... }
-        ShowEmptyState(emptyArgs[1])
+        ShowEmptyState()
         WarchiefBoardFrame:Show()
         return
     end

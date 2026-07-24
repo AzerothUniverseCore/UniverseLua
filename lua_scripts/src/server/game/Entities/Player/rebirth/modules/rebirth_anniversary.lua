@@ -20,6 +20,14 @@
 ]]
 
 local Repository = require("rebirth_repository")
+local RebirthHook = require("rebirth_hook")
+
+-- Level-up notification, localized per player (see rebirth_hook.lua's
+-- GetPlayerLocale / NOTICES for the frFR/enUS detection + message pattern).
+local LEVEL_UP_NOTICE = {
+    frFR = "|CFF00A2FFFélicitations ! Vous avez atteint le niveau de Rebirth %d !|r",
+    enUS = "|CFF00A2FFCongratulations! You have reached Rebirth level %d!|r",
+}
 
 -- ============================================================================
 -- LEVEL-UP PROCESSING
@@ -122,9 +130,9 @@ local function OnRebirthLevelChanged(player, rebirth, old_level, new_level)
     Repository:SyncLegacyRebirthAccount(rebirth:GetAccountId(), new_level)
 
     if player then
-        player:SendNotification(string.format(
-            "|CFF00A2FFFélicitations ! Vous avez atteint le niveau de Rebirth %d !|r", new_level
-        ))
+        local locale = RebirthHook.GetPlayerLocale(player)
+        local template = LEVEL_UP_NOTICE[locale] or LEVEL_UP_NOTICE.frFR
+        player:SendNotification(string.format(template, new_level))
     end
 end
 

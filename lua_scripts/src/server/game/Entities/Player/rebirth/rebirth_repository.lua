@@ -79,6 +79,25 @@ function Repository:VerifyDatabaseSchema()
         CharDBExecute(sf(q.ALTER_REWARD_ITEMS_ADD_NAME_ICON, db))
     end
 
+    -- Migration : add name_en (bilingual frFR/enUS support) to all 4
+    -- editable content tables -- same information_schema pattern as every
+    -- migration above. Heritage/Reward items now ship with real name/
+    -- name_en content too (see INS_DEFAULT_HERITAGE_ITEMS /
+    -- INS_DEFAULT_REWARD_ITEMS in rebirth_constant.lua), matching the
+    -- Pierre/Preuve treatment.
+    if not CharDBQuery(sf(q.SEL_PIERRE_OPTIONS_HAS_NAME_EN_COL, db)) then
+        CharDBExecute(sf(q.ALTER_PIERRE_OPTIONS_ADD_NAME_EN, db))
+    end
+    if not CharDBQuery(sf(q.SEL_PROOF_TELEPORTS_HAS_NAME_EN_COL, db)) then
+        CharDBExecute(sf(q.ALTER_PROOF_TELEPORTS_ADD_NAME_EN, db))
+    end
+    if not CharDBQuery(sf(q.SEL_HERITAGE_ITEMS_HAS_NAME_EN_COL, db)) then
+        CharDBExecute(sf(q.ALTER_HERITAGE_ITEMS_ADD_NAME_EN, db))
+    end
+    if not CharDBQuery(sf(q.SEL_REWARD_ITEMS_HAS_NAME_EN_COL, db)) then
+        CharDBExecute(sf(q.ALTER_REWARD_ITEMS_ADD_NAME_EN, db))
+    end
+
     CharDBExecute(sf(q.INS_DEFAULT_PIERRE_OPTIONS, db))
     CharDBExecute(sf(q.INS_DEFAULT_PROOF_TELEPORTS, db))
     CharDBExecute(sf(q.INS_DEFAULT_HERITAGE_ITEMS, db))
@@ -340,7 +359,8 @@ function Repository:GetPierreOptionsConfig()
             id = query:GetUInt32(0),
             level = query:GetUInt32(1),
             name = query:GetString(2),
-            icon = query:GetString(3),
+            name_en = query:GetString(3),
+            icon = query:GetString(4),
         })
     until not query:NextRow()
 
@@ -370,7 +390,8 @@ function Repository:GetProofTeleportsConfig()
             z = query:GetFloat(5),
             o = query:GetFloat(6),
             name = query:GetString(7),
-            icon = query:GetString(8),
+            name_en = query:GetString(8),
+            icon = query:GetString(9),
         })
     until not query:NextRow()
 
@@ -395,7 +416,8 @@ function Repository:GetHeritageItemsConfig()
             item = query:GetUInt32(0),
             level = query:GetUInt32(1),
             name = query:GetString(2),
-            icon = query:GetString(3),
+            name_en = query:GetString(3),
+            icon = query:GetString(4),
         })
     until not query:NextRow()
 
@@ -421,7 +443,8 @@ function Repository:GetRewardItemsConfig()
             level = query:GetUInt32(1),
             max_claims = query:GetUInt32(2),
             name = query:GetString(3),
-            icon = query:GetString(4),
+            name_en = query:GetString(4),
+            icon = query:GetString(5),
         })
     until not query:NextRow()
 

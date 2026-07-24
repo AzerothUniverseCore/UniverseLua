@@ -6,6 +6,30 @@ end
 
 local WeaponsUpgradeHandlers = AIO.AddHandlers("WeaponsUpgradeHandler", {})
 
+local UI_LOCALE = (GetLocale and GetLocale() == "enUS") and "enUS" or "frFR"
+local Locales = {
+    frFR = {
+        TITLE = "Arme Prodigieuse",
+        SUBTITLE = "|cffff8204(Amélioration)|r",
+        PRICE_TEXT = "Prix : 14000 Cristaux d'Infusion",
+        UPGRADE_BUTTON = "Améliorer",
+        ERR_IN_COMBAT = "Vous ne pouvez pas améliorer votre arme pendant un combat.",
+        ERR_CANT_UPGRADE = "Cet objet ne peut pas être amélioré.",
+        ERR_NO_ITEM = "Veuillez placer une arme prodigieuse dans l'emplacement avant d'utiliser l'amélioration.",
+    },
+    enUS = {
+        TITLE = "Prodigious Weapon",
+        SUBTITLE = "|cffff8204(Upgrade)|r",
+        PRICE_TEXT = "Price: 14000 Infusion Crystals",
+        UPGRADE_BUTTON = "Upgrade",
+        ERR_IN_COMBAT = "You cannot upgrade your weapon while in combat.",
+        ERR_CANT_UPGRADE = "This item cannot be upgraded.",
+        ERR_NO_ITEM = "Please place a prodigious weapon in the slot before using the upgrade.",
+    },
+}
+local L = Locales[UI_LOCALE] or Locales.frFR
+
+
 local OPEN_TALENT_WINDOW_SOUND = "Sound\\TalentsSystem\\ui_9_0_covenant_ability_ability_button_placed.ogg"
 local CLOSE_TALENT_WINDOW_SOUND = "Sound\\TalentsSystem\\ui_9_0_covenant_ability_ability_button_appears.ogg"
 local UPGRADE_SUCCESS_SOUND = "Sound\\TalentsSystem\\ui_70_artifact_forge_apperancechange_03.ogg"
@@ -65,11 +89,11 @@ local function CreateWeaponsUpgrade()
     title:SetFont("Fonts\\MORPHEUS.TTF", 20, "OUTLINE")
     title:SetPoint("TOP", 0, -18)
     title:SetTextColor(1, 1, 1)
-    title:SetText("Arme Prodigieuse")
+    title:SetText(L.TITLE)
 
     local subtitle = frameWeaponsUpgrade:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     subtitle:SetPoint("TOP", title, "BOTTOM", 0, -6)
-    subtitle:SetText("|cffff8204(Amélioration)|r")
+    subtitle:SetText(L.SUBTITLE)
 
     frameWeaponsUpgrade:SetScript("OnHide", function()
         PlaySoundFile(CLOSE_TALENT_WINDOW_SOUND)
@@ -202,7 +226,7 @@ local function CreateWeaponsUpgrade()
 
     local goldCostText = frameWeaponsUpgrade:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     goldCostText:SetPoint("LEFT", goldIcon, "RIGHT", 5, 0)
-    goldCostText:SetText("Prix : 14000 Cristaux d'Infusion")
+    goldCostText:SetText(L.PRICE_TEXT)
 
     itemSlot2:SetScript("OnLeave", function(self)
         self.ring:SetVertexColor(1, 1, 1)
@@ -222,7 +246,7 @@ local function CreateWeaponsUpgrade()
     local upgradeLabel = upgradeButton:CreateFontString(nil, "OVERLAY")
     upgradeLabel:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
     upgradeLabel:SetPoint("CENTER")
-    upgradeLabel:SetText("Améliorer")
+    upgradeLabel:SetText(L.UPGRADE_BUTTON)
     upgradeLabel:SetTextColor(1, 1, 1)
 
     upgradeButton:SetScript("OnEnter", function(self) self.bg:SetVertexColor(1, 0.85, 0.55) end)
@@ -230,7 +254,7 @@ local function CreateWeaponsUpgrade()
 
     upgradeButton:SetScript("OnClick", function()
         if InCombatLockdown() then
-            print("Vous ne pouvez pas améliorer votre arme pendant un combat.")
+            print(L.ERR_IN_COMBAT)
             return
         end
 
@@ -238,7 +262,7 @@ local function CreateWeaponsUpgrade()
             local newItemID = upgradeMapping[currentItemID]
             if not newItemID then
                 PlaySoundFile(UPGRADE_FAILURE_SOUND)
-                print("Cet objet ne peut pas être amélioré.")
+                print(L.ERR_CANT_UPGRADE)
                 return
             end
 
@@ -249,7 +273,7 @@ local function CreateWeaponsUpgrade()
             currentItemID = nil
         else
             PlaySoundFile(PLACEHOLDER_SOUND)
-            print("Veuillez placer une arme prodigieuse dans l'emplacement avant d'utiliser l'amélioration.")
+            print(L.ERR_NO_ITEM)
         end
     end)
 

@@ -68,6 +68,22 @@ local KEYS = {
 	},
 }
 
+local UI_LOCALE = (GetLocale and GetLocale() == "enUS") and "enUS" or "frFR"
+local StoreLocales = {
+	frFR = {
+		TITLE = "Boutique",
+		BUY_BUTTON = "Acheter",
+		ACCESS_DENIED = "Vous n'avez pas accès à cette catégorie !",
+	},
+	enUS = {
+		TITLE = "Store",
+		BUY_BUTTON = "Buy",
+		ACCESS_DENIED = "You do not have access to this category!",
+	},
+}
+local StoreL = StoreLocales[UI_LOCALE] or StoreLocales.frFR
+CONFIG.strings.categoryAccessDenied = StoreL.ACCESS_DENIED
+
 local scaleMulti = 0.85
 
 -- Helpers --
@@ -127,6 +143,11 @@ function SHOP_UI.MainFrame_Create()
 	-- Create main frame
 	local shopFrame = CreateFrame("Frame", "SHOP_FRAME", UIParent)
 	shopFrame:SetPoint("LEFT", 40, 0)
+	-- Force the shop window above regular HUD elements (ex: the RateExp XP
+	-- button anchored on PlayerFrame at strata MEDIUM/level 10), so it never
+	-- gets drawn underneath other addons' buttons/icons.
+	shopFrame:SetFrameStrata("DIALOG")
+	shopFrame:SetToplevel(true)
 	shopFrame:Hide()
 	
 	-- Pixel size of background texture, then scaled
@@ -144,7 +165,7 @@ function SHOP_UI.MainFrame_Create()
 	shopFrame.Title:SetFont("Fonts\\FRIZQT__.TTF", 14)
 	shopFrame.Title:SetShadowOffset(1, -1)
 	shopFrame.Title:SetPoint("TOP", shopFrame, "TOP", 0, -3)
-	shopFrame.Title:SetText("|cffedd100Boutique|r")
+	shopFrame.Title:SetText("|cffedd100"..StoreL.TITLE.."|r")
 	
 	-- create navigation button placeholders, pass parent as arg
 	SHOP_UI.NavButtons_Create(shopFrame)
@@ -454,7 +475,7 @@ function SHOP_UI.ServiceBoxes_Create(parent)
 		service.buyButton.ButtonText = service.buyButton:CreateFontString()
 		service.buyButton.ButtonText:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
 		service.buyButton.ButtonText:SetPoint("CENTER", service.buyButton, 0, 0)
-		service.buyButton.ButtonText:SetText("Acheter")
+		service.buyButton.ButtonText:SetText(StoreL.BUY_BUTTON)
 		
 		service.buyButton:SetScript(
 			"OnClick",
@@ -1193,7 +1214,7 @@ local function ModifyGameMenuFrame()
 	storeButton.Text:SetFont("Fonts\\FRIZQT__.TTF", 13, "OUTLINE")
 	storeButton.Text:SetShadowOffset(1, -1)
 	storeButton.Text:SetPoint("CENTER", storeButton, "CENTER", 0, 1)
-	storeButton.Text:SetText("|cffdbe005Boutique");
+	storeButton.Text:SetText("|cffdbe005"..StoreL.TITLE);
 	
 	-- on click open the shop frame and hide the escape menu
 	storeButton:SetScript("OnClick", function()

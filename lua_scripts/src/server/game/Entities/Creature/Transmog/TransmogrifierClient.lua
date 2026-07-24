@@ -40,6 +40,79 @@ end
 local TransmogHandlers = AIO.AddHandlers("Transmog", {})
 local TRANSMOG_WINDOW = "TransmogFrame"
 
+local UI_LOCALE = (GetLocale and GetLocale() == "enUS") and "enUS" or "frFR"
+
+local SLOT_NAMES_FR = {
+    [1]  = "Tête",
+    [3]  = "Épaules",
+    [15] = "Dos",
+    [5]  = "Torse",
+    [9]  = "Poignets",
+    [10] = "Mains",
+    [6]  = "Taille",
+    [7]  = "Jambes",
+    [8]  = "Pieds",
+    [16] = "Main droite",
+    [17] = "Main gauche",
+    [18] = "À distance",
+}
+
+local SLOT_NAMES_EN = {
+    [1]  = "Head",
+    [3]  = "Shoulders",
+    [15] = "Back",
+    [5]  = "Chest",
+    [9]  = "Wrists",
+    [10] = "Hands",
+    [6]  = "Waist",
+    [7]  = "Legs",
+    [8]  = "Feet",
+    [16] = "Main Hand",
+    [17] = "Off Hand",
+    [18] = "Ranged",
+}
+
+local Locales = {
+    frFR = {
+        SLOT_NAMES = SLOT_NAMES_FR,
+        CAM_ZOOM_IN = "Zoomer",
+        CAM_ZOOM_OUT = "Dézoomer",
+        CAM_PAN = "Glisser (clic droit + glisser sur le modèle)",
+        CAM_ROTATE_LEFT = "Pivoter à gauche",
+        CAM_ROTATE_RIGHT = "Pivoter à droite",
+        CAM_RESET = "Position par défaut",
+        APPLY_BUTTON = "Appliquer",
+        RESET_ALL_BUTTON = "Tout réinitialiser",
+        COST_LABEL = "Coût par transmogrification :",
+        TOOLTIP_NO_ITEM_AVAILABLE = "Aucun objet équipé (objets disponibles)",
+        TOOLTIP_NO_ITEM_NONE = "Aucun objet équipé ni disponible",
+        TOOLTIP_PENDING = "Changement en attente (Appliquer, clic droit pour annuler)",
+        TOOLTIP_DRAG_HINT = "Glissez un objet de même type depuis vos sacs",
+        DEFAULT_SUCCESS_MSG = "Transmogrification appliquée",
+        DEFAULT_ERROR_MSG = "Erreur de transmogrification",
+    },
+    enUS = {
+        SLOT_NAMES = SLOT_NAMES_EN,
+        CAM_ZOOM_IN = "Zoom in",
+        CAM_ZOOM_OUT = "Zoom out",
+        CAM_PAN = "Pan (right-click + drag on the model)",
+        CAM_ROTATE_LEFT = "Rotate left",
+        CAM_ROTATE_RIGHT = "Rotate right",
+        CAM_RESET = "Default position",
+        APPLY_BUTTON = "Apply",
+        RESET_ALL_BUTTON = "Reset All",
+        COST_LABEL = "Cost per transmogrification:",
+        TOOLTIP_NO_ITEM_AVAILABLE = "No item equipped (items available)",
+        TOOLTIP_NO_ITEM_NONE = "No item equipped or available",
+        TOOLTIP_PENDING = "Pending change (Apply, right-click to cancel)",
+        TOOLTIP_DRAG_HINT = "Drag a matching item from your bags",
+        DEFAULT_SUCCESS_MSG = "Transmogrification applied",
+        DEFAULT_ERROR_MSG = "Transmogrification error",
+    },
+}
+
+local L = Locales[UI_LOCALE] or Locales.frFR
+
 local OPEN_TALENT_WINDOW_SOUND  = "Sound\\INTERFACE\\UI_Transmogrify_Apply.OGG"
 local CLOSE_TALENT_WINDOW_SOUND = "Sound\\INTERFACE\\UI_VoidStorage_Undo.OGG"
 local GET_ITEM_WINDOW_SOUND     = "Sound\\INTERFACE\\UI_Reforging_Reforge.ogg"
@@ -56,35 +129,35 @@ local SLOT_NO_COORDS    = {395/512, 416/512, 156/512, 177/512}
 
 -- Configuration des slots d'équipement
 local SLOTS = {
-    {id = 1,  name = "Tête",        slot = "HeadSlot"},
-    {id = 3,  name = "Épaules",     slot = "ShoulderSlot"},
-    {id = 15, name = "Dos",         slot = "BackSlot"},
-    {id = 5,  name = "Torse",       slot = "ChestSlot"},
-    {id = 9,  name = "Poignets",    slot = "WristSlot"},
-    {id = 10, name = "Mains",       slot = "HandsSlot"},
-    {id = 6,  name = "Taille",      slot = "WaistSlot"},
-    {id = 7,  name = "Jambes",      slot = "LegsSlot"},
-    {id = 8,  name = "Pieds",       slot = "FeetSlot"},
-    {id = 16, name = "Main droite", slot = "MainHandSlot"},
-    {id = 17, name = "Main gauche", slot = "SecondaryHandSlot"},
-    {id = 18, name = "À distance",  slot = "RangedSlot"},
+    {id = 1,  name = L.SLOT_NAMES[1],  slot = "HeadSlot"},
+    {id = 3,  name = L.SLOT_NAMES[3],  slot = "ShoulderSlot"},
+    {id = 15, name = L.SLOT_NAMES[15], slot = "BackSlot"},
+    {id = 5,  name = L.SLOT_NAMES[5],  slot = "ChestSlot"},
+    {id = 9,  name = L.SLOT_NAMES[9],  slot = "WristSlot"},
+    {id = 10, name = L.SLOT_NAMES[10], slot = "HandsSlot"},
+    {id = 6,  name = L.SLOT_NAMES[6],  slot = "WaistSlot"},
+    {id = 7,  name = L.SLOT_NAMES[7],  slot = "LegsSlot"},
+    {id = 8,  name = L.SLOT_NAMES[8],  slot = "FeetSlot"},
+    {id = 16, name = L.SLOT_NAMES[16], slot = "MainHandSlot"},
+    {id = 17, name = L.SLOT_NAMES[17], slot = "SecondaryHandSlot"},
+    {id = 18, name = L.SLOT_NAMES[18], slot = "RangedSlot"},
 }
 
 -- Disposition compacte : colonne gauche / colonne droite / rangée basse,
 -- autour d'un petit modèle central (comme la vraie fenêtre Transmogrifier).
 local slotPositions = {
-    [1]  = {name = "Tête",        x = -100, y =  120},
-    [3]  = {name = "Épaules",     x = -100, y =   72},
-    [15] = {name = "Dos",         x = -100, y =   24},
-    [5]  = {name = "Torse",       x = -100, y =  -24},
-    [9]  = {name = "Poignets",    x = -100, y =  -72},
-    [10] = {name = "Mains",       x =  100, y =   96},
-    [6]  = {name = "Taille",      x =  100, y =   48},
-    [7]  = {name = "Jambes",      x =  100, y =    0},
-    [8]  = {name = "Pieds",       x =  100, y =  -48},
-    [16] = {name = "Main droite", x =  -40, y = -125},
-    [17] = {name = "Main gauche", x =    0, y = -125},
-    [18] = {name = "À distance",  x =   40, y = -125},
+    [1]  = {name = L.SLOT_NAMES[1],  x = -100, y =  120},
+    [3]  = {name = L.SLOT_NAMES[3],  x = -100, y =   72},
+    [15] = {name = L.SLOT_NAMES[15], x = -100, y =   24},
+    [5]  = {name = L.SLOT_NAMES[5],  x = -100, y =  -24},
+    [9]  = {name = L.SLOT_NAMES[9],  x = -100, y =  -72},
+    [10] = {name = L.SLOT_NAMES[10], x =  100, y =   96},
+    [6]  = {name = L.SLOT_NAMES[6],  x =  100, y =   48},
+    [7]  = {name = L.SLOT_NAMES[7],  x =  100, y =    0},
+    [8]  = {name = L.SLOT_NAMES[8],  x =  100, y =  -48},
+    [16] = {name = L.SLOT_NAMES[16], x =  -40, y = -125},
+    [17] = {name = L.SLOT_NAMES[17], x =    0, y = -125},
+    [18] = {name = L.SLOT_NAMES[18], x =   40, y = -125},
 }
 
 local slotButtons      = {}
@@ -280,7 +353,7 @@ local function ShowTransmogToast(message, icon)
     end
 
     local frame = transmogToastFrame
-    frame.text:SetText(message or "Transmogrification appliquée")
+    frame.text:SetText(message or L.DEFAULT_SUCCESS_MSG)
     frame.icon:SetTexture(icon or "Interface\\RaidFrame\\ReadyCheck-Ready")
     frame.elapsed = 0
     frame:SetAlpha(1)
@@ -353,28 +426,28 @@ end
 local function CreateCameraControls(frame)
     local buttons = {}
     local defs = {
-        {"+", "Zoomer", function()
+        {"+", L.CAM_ZOOM_IN, function()
             if not playerModel then return end
             playerModel.zoomOffset = math.min(2, playerModel.zoomOffset + 0.3)
             playerModel.ApplyCamera()
         end},
-        {"-", "Dézoomer", function()
+        {"-", L.CAM_ZOOM_OUT, function()
             if not playerModel then return end
             playerModel.zoomOffset = math.max(-2, playerModel.zoomOffset - 0.3)
             playerModel.ApplyCamera()
         end},
-        {"H", "Glisser (clic droit + glisser sur le modèle)", function() end},
-        {"<", "Pivoter à gauche", function()
+        {"H", L.CAM_PAN, function() end},
+        {"<", L.CAM_ROTATE_LEFT, function()
             if not playerModel then return end
             playerModel.rotation = playerModel.rotation - 0.4
             playerModel.ApplyCamera()
         end},
-        {">", "Pivoter à droite", function()
+        {">", L.CAM_ROTATE_RIGHT, function()
             if not playerModel then return end
             playerModel.rotation = playerModel.rotation + 0.4
             playerModel.ApplyCamera()
         end},
-        {"R", "Position par défaut", function()
+        {"R", L.CAM_RESET, function()
             if not playerModel then return end
             playerModel.zoomOffset = 0
             playerModel.rotation   = 0.15
@@ -726,15 +799,15 @@ function TransmogHandlers.CreateUI(player)
                 else
                     GameTooltip:SetText(pos.name)
                     if slotHasItems[self.slotId] then
-                        GameTooltip:AddLine("Aucun objet équipé (objets disponibles)", 0.6, 1, 0.6)
+                        GameTooltip:AddLine(L.TOOLTIP_NO_ITEM_AVAILABLE, 0.6, 1, 0.6)
                     else
-                        GameTooltip:AddLine("Aucun objet équipé ni disponible", 0.8, 0.8, 0.8)
+                        GameTooltip:AddLine(L.TOOLTIP_NO_ITEM_NONE, 0.8, 0.8, 0.8)
                     end
                 end
                 if pendingChanges[self.slotId] then
-                    GameTooltip:AddLine("Changement en attente (Appliquer, clic droit pour annuler)", 0.6, 1, 0.6)
+                    GameTooltip:AddLine(L.TOOLTIP_PENDING, 0.6, 1, 0.6)
                 else
-                    GameTooltip:AddLine("Glissez un objet de même type depuis vos sacs", 0.7, 0.7, 0.7)
+                    GameTooltip:AddLine(L.TOOLTIP_DRAG_HINT, 0.7, 0.7, 0.7)
                 end
                 GameTooltip:Show()
             end)
@@ -750,7 +823,7 @@ function TransmogHandlers.CreateUI(player)
     applyBtn = CreateFrame("Button", nil, TransmogFrame, "UIPanelButtonTemplate")
     applyBtn:SetSize(120, 28)
     applyBtn:SetPoint("BOTTOM", 60, 33)
-    applyBtn:SetText("Appliquer")
+    applyBtn:SetText(L.APPLY_BUTTON)
     applyBtn:SetScript("OnClick", function()
         local count = 0
         for slotId, itemId in pairs(pendingChanges) do
@@ -770,7 +843,7 @@ function TransmogHandlers.CreateUI(player)
     local resetAllBtn = CreateFrame("Button", nil, TransmogFrame, "UIPanelButtonTemplate")
     resetAllBtn:SetSize(120, 22)
     resetAllBtn:SetPoint("BOTTOM", -70, 35)
-    resetAllBtn:SetText("Tout réinitialiser")
+    resetAllBtn:SetText(L.RESET_ALL_BUTTON)
     resetAllBtn:SetScript("OnClick", function()
         pendingChanges = {}
         pendingLinks = {}
@@ -798,7 +871,7 @@ function TransmogHandlers.CreateUI(player)
 
     local costLabel = costFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     costLabel:SetPoint("BOTTOM", costText, "TOP", 0, 4)
-    costLabel:SetText("Coût par transmogrification :")
+    costLabel:SetText(L.COST_LABEL)
     costLabel:SetTextColor(0.8, 0.8, 0.8)
 
     -- Fermeture via Escape
@@ -930,7 +1003,7 @@ function TransmogHandlers.ShowSuccess(player, message, icon)
 end
 
 function TransmogHandlers.ShowError(player, message)
-    ShowTransmogToast(message or "Erreur de transmogrification", "Interface\\RaidFrame\\ReadyCheck-NotReady")
+    ShowTransmogToast(message or L.DEFAULT_ERROR_MSG, "Interface\\RaidFrame\\ReadyCheck-NotReady")
 end
 
 -- ============================================================

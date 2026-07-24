@@ -16,6 +16,46 @@ local AIO = AIO or require("AIO");
 local h_expmodifier = AIO.AddHandlers("h_expmodifier", {})
 
 --[[ 
+    LOCALE frFR / enUS (notifications joueur)
+]]--
+local Notif = {
+    frFR = {
+        PREMIUM_REQUIRED = "Vous devez être Contributeur Premium pour utiliser ce multiplicateur!",
+        INVALID_MODIFIER = "Multiplicateur invalide!",
+        RATE_SET = "Votre multiplicateur d'expérience est maintenant en x%d!",
+    },
+    enUS = {
+        PREMIUM_REQUIRED = "You must be a Premium Contributor to use this multiplier!",
+        INVALID_MODIFIER = "Invalid multiplier!",
+        RATE_SET = "Your experience multiplier is now x%d!",
+    },
+}
+
+local function GetPlayerLocale(player)
+    local ok, result = pcall(function()
+        local accountId = player:GetAccountId()
+        local q = AuthDBQuery("SELECT locale FROM account WHERE id = "..accountId..";")
+        if q then
+            local loc = q:GetUInt8(0)
+            -- TrinityCore LocaleConstant: 0 = enUS, 2 = frFR
+            if loc == 0 then
+                return "enUS"
+            end
+        end
+        return "frFR"
+    end)
+    if ok and result then
+        return result
+    end
+    return "frFR"
+end
+
+local function L(player)
+    return Notif[GetPlayerLocale(player)] or Notif.frFR
+end
+
+
+--[[ 
     getRateModifier
     Récupère le multiplicateur et le statut premium du joueur
 ]]--
@@ -123,18 +163,18 @@ function h_expmodifier.setRateModifier(player, modifier)
     
     -- Vérifier si le joueur essaie de définir x4 ou x5 sans être premium
     if (modifier == 4 or modifier == 5) and not isPremium then
-        player:SendNotification('Vous devez être Contributeur Premium pour utiliser ce multiplicateur!')
+        player:SendNotification(L(player).PREMIUM_REQUIRED)
         return
     end
     
     -- Validation du modificateur
     if modifier < 1 or modifier > 5 then
-        player:SendNotification('Multiplicateur invalide!')
+        player:SendNotification(L(player).INVALID_MODIFIER)
         return
     end
     
     m_exp[pGuid].mod_exp = modifier;
-    player:SendNotification('Votre multiplicateur d\'expérience est maintenant en x'..m_exp[pGuid].mod_exp..'!')
+    player:SendNotification(string.format(L(player).RATE_SET, m_exp[pGuid].mod_exp))
 
     h_expmodifier.update(player)
 end

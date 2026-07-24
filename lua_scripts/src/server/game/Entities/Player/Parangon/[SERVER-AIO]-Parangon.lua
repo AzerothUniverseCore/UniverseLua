@@ -43,6 +43,50 @@ local parangon = {
 
 local parangon_addon = AIO.AddHandlers("AIO_Parangon", {})
 
+--[[
+    LOCALE frFR / enUS (notifications joueur)
+]]--
+local ParangonNotif = {
+    frFR = {
+        IN_COMBAT = "Vous ne pouvez pas faire ça en combat.",
+        LEVEL_REQUIRED = "Vous n'avez pas le niveau requis.",
+        NO_POINTS_TO_ADD = "Vous n'avez plus de points à attribuer.",
+        NO_POINTS_TO_REMOVE = "Vous n'avez pas de points à retirer.",
+        LEVEL_UP = "|CFF00A2FFVous venez de passer un niveau de Parangon.\nFélicitations, vous êtes maintenant au niveau %d !",
+    },
+    enUS = {
+        IN_COMBAT = "You cannot do that while in combat.",
+        LEVEL_REQUIRED = "You do not have the required level.",
+        NO_POINTS_TO_ADD = "You have no more points to spend.",
+        NO_POINTS_TO_REMOVE = "You have no points to remove.",
+        LEVEL_UP = "|CFF00A2FFYou just gained a Parangon level.\nCongratulations, you are now level %d !",
+    },
+}
+
+local function GetPlayerLocale(player)
+    local ok, result = pcall(function()
+        local accountId = player:GetAccountId()
+        local q = AuthDBQuery("SELECT locale FROM account WHERE id = "..accountId..";")
+        if q then
+            local loc = q:GetUInt8(0)
+            -- TrinityCore LocaleConstant: 0 = enUS, 2 = frFR
+            if loc == 0 then
+                return "enUS"
+            end
+        end
+        return "frFR"
+    end)
+    if ok and result then
+        return result
+    end
+    return "frFR"
+end
+
+local function L(player)
+    return ParangonNotif[GetPlayerLocale(player)] or ParangonNotif.frFR
+end
+
+
 parangon.account = {}
 
 -- Fonction d'envoi des informations au client
@@ -123,13 +167,13 @@ function parangon_addon.setStatsInformation(player, stat, value, flags)
     local pCombat = player:IsInCombat()
     
     if pCombat then
-        player:SendNotification('Vous ne pouvez pas faire ça en combat.')
+        player:SendNotification(L(player).IN_COMBAT)
         return false
     end
     
     local pLevel = player:GetLevel()
     if pLevel < parangon.config.minLevel then
-        player:SendNotification('Vous n\'avez pas le niveau requis.')
+        player:SendNotification(L(player).LEVEL_REQUIRED)
         return false
     end
     
@@ -144,7 +188,7 @@ function parangon_addon.setStatsInformation(player, stat, value, flags)
             player:SetData('parangon_points', currentPoints - value)
             player:SetData('parangon_points_spend', spentPoints + value)
         else
-            player:SendNotification('Vous n\'avez plus de points à attribuer.')
+            player:SendNotification(L(player).NO_POINTS_TO_ADD)
             return false
         end
     else
@@ -154,7 +198,7 @@ function parangon_addon.setStatsInformation(player, stat, value, flags)
             player:SetData('parangon_points', currentPoints + value)
             player:SetData('parangon_points_spend', spentPoints - value)
         else
-            player:SendNotification('Vous n\'avez pas de points à retirer.')
+            player:SendNotification(L(player).NO_POINTS_TO_REMOVE)
             return false
         end
     end
@@ -427,5 +471,5 @@ function Player:SetParangonLevel(level)
     self:RemoveAura(24312)
     
     -- Notification
-    self:SendNotification('|CFF00A2FFVous venez de passer un niveau de Parangon.\nFélicitations, vous êtes maintenant au niveau '..parangon.account[pAcc].level..' !')
+    self:SendNotification(string.format(L(self).LEVEL_UP, parangon.account[pAcc].level))
 end

@@ -1,6 +1,41 @@
 -- DestinyPandaServer.lua
 local AIO = AIO or require("AIO")
 
+-- ------------------------------------------------------------
+--  Locale du joueur (bilingue frFR / enUS, repli sur frFR)
+-- ------------------------------------------------------------
+local function GetPlayerLocale(player)
+    local ok, result = pcall(function()
+        local accountId = player:GetAccountId()
+        local q = AuthDBQuery("SELECT locale FROM account WHERE id = "..accountId..";")
+        if q then
+            local loc = q:GetUInt8(0)
+            if loc == 0 then return "enUS" end
+        end
+        return "frFR"
+    end)
+    if ok and result then return result end
+    return "frFR"
+end
+
+local DestinyNotif = {
+    frFR = {
+        CANT_JOIN_ALLIANCE = "|cff00ff98Vous ne pouvez pas rejoindre l'Alliance en tant que membre de la Horde.|r",
+        CANT_JOIN_HORDE     = "|cff00ff98Vous ne pouvez pas rejoindre la Horde en tant que membre de l'Alliance.|r",
+        LEVEL_REQUIRED      = "|cff00ff98Vous devez être au moins niveau 17 pour aller vers votre destin.|r",
+        QUEST_REQUIRED      = "|cff00ff98Vous devez d'abord terminer la quête : (De nouveaux alliés) pour aller vers votre destin.|r",
+    },
+    enUS = {
+        CANT_JOIN_ALLIANCE = "|cff00ff98You cannot join the Alliance as a member of the Horde.|r",
+        CANT_JOIN_HORDE     = "|cff00ff98You cannot join the Horde as a member of the Alliance.|r",
+        LEVEL_REQUIRED      = "|cff00ff98You must be at least level 17 to head toward your destiny.|r",
+        QUEST_REQUIRED      = "|cff00ff98You must first complete the quest: (New Allies) to head toward your destiny.|r",
+    },
+}
+local function L(player)
+    return DestinyNotif[GetPlayerLocale(player)] or DestinyNotif.frFR
+end
+
 local function OpenDestinyFaction(player)
     AIO.Handle(player, "DestinyFactionHandler", "OpenDestinyInterface")
 end
@@ -17,8 +52,8 @@ local function TeleportPlayer(event, player, command)
     if command == "teleport_panda alliance" then
         -- Si le joueur est de la Horde, il ne peut pas se téléporter vers l'Alliance
         if team == 1 then
-            player:SendBroadcastMessage("|cff00ff98Vous ne pouvez pas rejoindre l'Alliance en tant que membre de la Horde.|r")
-            player:SendNotification('|cff00ff98Vous ne pouvez pas rejoindre l\'Alliance en tant que membre de la Horde.|r')
+            player:SendBroadcastMessage(L(player).CANT_JOIN_ALLIANCE)
+            player:SendNotification(L(player).CANT_JOIN_ALLIANCE)
             return false
         end
         -- Téléportation vers l'Alliance
@@ -27,8 +62,8 @@ local function TeleportPlayer(event, player, command)
     elseif command == "teleport_panda horde" then
         -- Si le joueur est de l'Alliance, il ne peut pas se téléporter vers la Horde
         if team == 0 then
-            player:SendBroadcastMessage("|cff00ff98Vous ne pouvez pas rejoindre la Horde en tant que membre de l'Alliance.|r")
-            player:SendNotification('|cff00ff98Vous ne pouvez pas rejoindre la Horde en tant que membre de l\'Alliance.|r')
+            player:SendBroadcastMessage(L(player).CANT_JOIN_HORDE)
+            player:SendNotification(L(player).CANT_JOIN_HORDE)
             return false
         end
         -- Téléportation vers la Horde
@@ -50,15 +85,15 @@ local function OnGossipHello(event, player, gameObject)
 
     -- Vérifie si le joueur a atteint le niveau requis
     if player:GetLevel() < requiredLevel then
-        player:SendBroadcastMessage("|cff00ff98Vous devez être au moins niveau 17 pour aller vers votre destin.|r")
-		player:SendNotification('|cff00ff98Vous devez être au moins niveau 17 pour aller vers votre destin.|r')
+        player:SendBroadcastMessage(L(player).LEVEL_REQUIRED)
+		player:SendNotification(L(player).LEVEL_REQUIRED)
         return
     end
 
     -- Vérifie si la quête 29800 a été complétée en vérifiant la récompense
     if not player:HasReceivedQuestReward(questID) then
-        player:SendBroadcastMessage("|cff00ff98Vous devez d'abord terminer la quête : (De nouveaux alliés) pour aller vers votre destin.|r")
-		player:SendNotification('|cff00ff98Vous devez d\'abord terminer la quête : (De nouveaux alliés) pour aller vers votre destin.|r')
+        player:SendBroadcastMessage(L(player).QUEST_REQUIRED)
+		player:SendNotification(L(player).QUEST_REQUIRED)
         return
     end
 

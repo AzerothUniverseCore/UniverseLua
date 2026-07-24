@@ -2,6 +2,46 @@ local AIO = AIO or require("AIO")
 
 local WarModeHandlers = AIO.AddHandlers("WarMode", {})
 
+-- Détermine la langue du compte du joueur (0 = enUS, sinon frFR)
+local function GetPlayerLocale(player)
+    local ok, result = pcall(function()
+        local accountId = player:GetAccountId()
+        local q = AuthDBQuery("SELECT locale FROM account WHERE id = " .. accountId .. ";")
+        if q then
+            local localeId = q:GetUInt8(0)
+            if localeId == 0 then
+                return "enUS"
+            end
+        end
+        return "frFR"
+    end)
+    if ok and result then
+        return result
+    end
+    return "frFR"
+end
+
+local WarModeNotif = {
+    frFR = {
+        CANT_CHANGE_IN_COMBAT = "Vous ne pouvez pas changer votre mode guerre pendant un combat.",
+        ACTIVATED = "Le mode guerre a été activé ! Bonus d'XP et d'or de 10% activés.",
+        ALREADY_ACTIVE = "Le mode guerre est déjà activé.",
+        DEACTIVATED = "Le mode guerre a été désactivé ! Bonus retirés.",
+        ALREADY_INACTIVE = "Le mode guerre est déjà désactivé.",
+    },
+    enUS = {
+        CANT_CHANGE_IN_COMBAT = "You cannot change your War Mode while in combat.",
+        ACTIVATED = "War Mode has been enabled! 10% XP and gold bonus activated.",
+        ALREADY_ACTIVE = "War Mode is already enabled.",
+        DEACTIVATED = "War Mode has been disabled! Bonuses removed.",
+        ALREADY_INACTIVE = "War Mode is already disabled.",
+    },
+}
+
+local function L(player)
+    return WarModeNotif[GetPlayerLocale(player)] or WarModeNotif.frFR
+end
+
 -- Configuration
 local ITEM_ID = 339830
 local EXP_BONUS_AURA_ID = 57353
@@ -56,7 +96,7 @@ end
 -- Handler pour basculer le War Mode
 function WarModeHandlers.ToggleWarMode(player, activate)
     if player:IsInCombat() then
-        AIO.Handle(player, "WarMode", "ShowMessage", "Vous ne pouvez pas changer votre mode guerre pendant un combat.", true)
+        AIO.Handle(player, "WarMode", "ShowMessage", L(player).CANT_CHANGE_IN_COMBAT, true)
         return
     end
 
@@ -70,9 +110,9 @@ function WarModeHandlers.ToggleWarMode(player, activate)
             player:RegisterEvent(KeepPvPActive, 5000, 0)
             SaveWarModeState(player)
             AIO.Handle(player, "WarMode", "UpdateStatus", true)
-            AIO.Handle(player, "WarMode", "ShowMessage", "Le mode guerre a été activé ! Bonus d'XP et d'or de 10% activés.", false)
+            AIO.Handle(player, "WarMode", "ShowMessage", L(player).ACTIVATED, false)
         else
-            AIO.Handle(player, "WarMode", "ShowMessage", "Le mode guerre est déjà activé.", true)
+            AIO.Handle(player, "WarMode", "ShowMessage", L(player).ALREADY_ACTIVE, true)
         end
     else
         -- Désactiver War Mode
@@ -84,9 +124,9 @@ function WarModeHandlers.ToggleWarMode(player, activate)
             player:RemoveEvents()
             SaveWarModeState(player)
             AIO.Handle(player, "WarMode", "UpdateStatus", false)
-            AIO.Handle(player, "WarMode", "ShowMessage", "Le mode guerre a été désactivé ! Bonus retirés.", false)
+            AIO.Handle(player, "WarMode", "ShowMessage", L(player).DEACTIVATED, false)
         else
-            AIO.Handle(player, "WarMode", "ShowMessage", "Le mode guerre est déjà désactivé.", true)
+            AIO.Handle(player, "WarMode", "ShowMessage", L(player).ALREADY_INACTIVE, true)
         end
     end
 end

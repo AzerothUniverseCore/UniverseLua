@@ -26,7 +26,7 @@ MKS.Config = {
     DUNGEONS = {
 	-- [S0 - M0] Les Terres de Fyra
         [1] = {
-            mapId = 732, name = "Les Terres de Fyra", bossCount = 14, timer = 2400,
+            mapId = 732, name = "Les Terres de Fyra", nameEn = "The Lands of Fyra", bossCount = 14, timer = 2400,
             bosses = {
                 [7000110]=true, 
 				[7000143]=true, 
@@ -46,7 +46,7 @@ MKS.Config = {
         },
 	-- [S1 - M1] Les Terres de Feu
         [2] = {
-            mapId = 736, name = "Les Terres de Feu", bossCount = 14, timer = 2700,
+            mapId = 736, name = "Les Terres de Feu", nameEn = "The Lands of Fire", bossCount = 14, timer = 2700,
             bosses = {
                 [8000110]=true,
 				[8000143]=true,
@@ -66,7 +66,7 @@ MKS.Config = {
         },
 	-- [S2 - M2] Palais Mogu'Shan
         [3] = {
-            mapId = 750, name = "Palais Mogu'Shan", bossCount = 10, timer = 2700,
+            mapId = 750, name = "Palais Mogu'Shan", nameEn = "Mogu'shan Palace", bossCount = 10, timer = 2700,
             bosses = {
                 [9100014]=true, 
 				[9100029]=true, 
@@ -82,7 +82,7 @@ MKS.Config = {
         },
 	-- [S2 - M2] Serpent de jade
         [4] = {
-            mapId = 763, name = "Serpent de jade", bossCount = 4, timer = 1800,
+            mapId = 763, name = "Serpent de jade", nameEn = "Jade Serpent", bossCount = 4, timer = 1800,
             bosses = {
                 [9100003]=true, 
 				[9100001]=true, 
@@ -92,7 +92,7 @@ MKS.Config = {
         },
 	-- [S3 - M3] Caveaux Mogu'Shan
         [5] = {
-            mapId = 751, name = "Caveaux Mogu'Shan", bossCount = 7, timer = 2700,
+            mapId = 751, name = "Caveaux Mogu'Shan", nameEn = "Mogu'shan Vaults", bossCount = 7, timer = 2700,
             bosses = {
                 [5100104]=true,
 				[5100106]=true,
@@ -105,7 +105,7 @@ MKS.Config = {
         },
 	-- [S3 - M3] Cognefort
 		[6] = {
-            mapId = 734, name = "Cognefort", bossCount = 11, timer = 2700,
+            mapId = 734, name = "Cognefort", nameEn = "Grim Batol", bossCount = 11, timer = 2700,
             bosses = {
                 [650014]=true,
 				[5100124]=true,
@@ -122,7 +122,7 @@ MKS.Config = {
         },
 	-- [S4 - M4] Coeur de la peur
 		[7] = {
-            mapId = 779, name = "Coeur de la peur", bossCount = 6, timer = 2700,
+            mapId = 779, name = "Coeur de la peur", nameEn = "Heart of Fear", bossCount = 6, timer = 2700,
             bosses = {
                 [62980]=true,
 				[62543]=true,
@@ -134,7 +134,7 @@ MKS.Config = {
         },
 	-- [S4 - M4] Quais de Fer
 		[8] = {
-            mapId = 791, name = "Quais de Fer", bossCount = 2, timer = 2700,
+            mapId = 791, name = "Quais de Fer", nameEn = "Iron Docks", bossCount = 2, timer = 2700,
             bosses = {
                 [170115]=true,
 				[170551]=true,
@@ -142,14 +142,14 @@ MKS.Config = {
         },
 	-- [S5 - M5] La cime du Vortex
 		[9] = {
-            mapId = 776, name = "La cime du Vortex", bossCount = 1, timer = 2700,
+            mapId = 776, name = "La cime du Vortex", nameEn = "The Vortex Pinnacle", bossCount = 1, timer = 2700,
             bosses = {
                 [43875]=true,
             },
         },
 	-- [S5 - M5] Terrasse Printanière
 		[10] = {
-            mapId = 765, name = "Terrasse Printanière", bossCount = 6, timer = 2700,
+            mapId = 765, name = "Terrasse Printanière", nameEn = "Terrace of Endless Spring", bossCount = 6, timer = 2700,
             bosses = {
                 [60583]=true,
 				[60585]=true,
@@ -161,7 +161,7 @@ MKS.Config = {
         },
 	-- [S6 - M6] Temple de Niuzao
 		[11] = {
-            mapId = 778, name = "Temple de Niuzao", bossCount = 3, timer = 2700,
+            mapId = 778, name = "Temple de Niuzao", nameEn = "Niuzao Temple", bossCount = 3, timer = 2700,
             bosses = {
                 [61567]=true,
 				[61485]=true,
@@ -170,7 +170,7 @@ MKS.Config = {
         },
 	-- [S6 - M6] Orée du Ciel
 		[12] = {
-            mapId = 795, name = "Orée du Ciel", bossCount = 3, timer = 2700,
+            mapId = 795, name = "Orée du Ciel", nameEn = "Skyreach", bossCount = 3, timer = 2700,
             bosses = {
                 [184720]=true,
 				[194285]=true,
@@ -179,7 +179,7 @@ MKS.Config = {
         },
 	-- [S7 - M7] Puits d'éternité
 		[13] = {
-            mapId = 794, name = "Puits d'éternité", bossCount = 2, timer = 2700,
+            mapId = 794, name = "Puits d'éternité", nameEn = "Well of Eternity", bossCount = 2, timer = 2700,
             bosses = {
                 [55085]=true,
 				[54853]=true,
@@ -187,7 +187,7 @@ MKS.Config = {
         },
 	-- [S7 - M7] Salles des Valeureux
 		[14] = {
-            mapId = 796, name = "Salles des Valeureux", bossCount = 3, timer = 2700,
+            mapId = 796, name = "Salles des Valeureux", nameEn = "Halls of Valor", bossCount = 3, timer = 2700,
             bosses = {
                 [94960]=true,
 				[106320]=true,
@@ -196,7 +196,7 @@ MKS.Config = {
         },
 	-- [S8 - M8] Palais Sacrenuit
 		[15] = {
-            mapId = 797, name = "Palais Sacrenuit", bossCount = 6, timer = 2700,
+            mapId = 797, name = "Palais Sacrenuit", nameEn = "Nighthold", bossCount = 6, timer = 2700,
             bosses = {
                 [102263]=true,
 				[112255]=true,
@@ -208,7 +208,7 @@ MKS.Config = {
         },
 	-- [M+FULL] Antorus Trone Ardent
 		[16] = {
-            mapId = 737, name = "Antorus", bossCount = 12, timer = 2700,
+            mapId = 737, name = "Antorus", nameEn = "Antorus, the Burning Throne", bossCount = 12, timer = 2700,
             bosses = {
                 [122366]=true,
 				[122469]=true,
@@ -234,11 +234,11 @@ MKS.Config = {
     },
 
     AFFIXES = {
-        [2]  = { id=1, name="Fortifié",       icon="ability_toughness",            desc="Les unités ennemies normales ont 20 % de PV supplémentaires et infligent jusqu'à 20 % de dégâts supplémentaires." },
-        [4]  = { id=2, name="Tyrannique",     icon="achievement_boss_archaedas",   desc="Les boss ont 25 % de PV supplémentaires. Leurs dégâts sont augmentés de 15 % au maximum." },
-        [7]  = { id=3, name="Tourbillonnant", icon="spell_nature_cyclone",         desc="En combat, les ennemis invoquent périodiquement des tourbillons dévastateurs." },
-        [10] = { id=4, name="Explosif",       icon="spell_fire_felflamering_red",  desc="En combat, les ennemis invoquent périodiquement des orbes explosifs." },
-        [14] = { id=5, name="Orgueilleux",    icon="spell_animarevendreth_buff",   desc="Vaincre des ennemis remplit les joueurs de fierté, créant une manifestation de l'orgueil." },
+        [2]  = { id=1, name="Fortifié",       nameEn="Fortified",  icon="ability_toughness",            desc="Les unités ennemies normales ont 20 % de PV supplémentaires et infligent jusqu'à 20 % de dégâts supplémentaires.", descEn="Non-boss enemies have 20% more health and deal up to 20% more damage." },
+        [4]  = { id=2, name="Tyrannique",     nameEn="Tyrannical", icon="achievement_boss_archaedas",   desc="Les boss ont 25 % de PV supplémentaires. Leurs dégâts sont augmentés de 15 % au maximum.", descEn="Bosses have 25% more health. Their damage is increased by up to 15%." },
+        [7]  = { id=3, name="Tourbillonnant", nameEn="Whirling",   icon="spell_nature_cyclone",         desc="En combat, les ennemis invoquent périodiquement des tourbillons dévastateurs.", descEn="In combat, enemies periodically summon devastating whirlwinds." },
+        [10] = { id=4, name="Explosif",       nameEn="Explosive",  icon="spell_fire_felflamering_red",  desc="En combat, les ennemis invoquent périodiquement des orbes explosifs.", descEn="In combat, enemies periodically summon explosive orbs." },
+        [14] = { id=5, name="Orgueilleux",    nameEn="Prideful",   icon="spell_animarevendreth_buff",   desc="Vaincre des ennemis remplit les joueurs de fierté, créant une manifestation de l'orgueil.", descEn="Defeating enemies fills players with pride, creating a manifestation of that pride." },
     },
 
     -- REWARDS supprimé : le loot est désormais tiré aléatoirement
@@ -246,6 +246,72 @@ MKS.Config = {
 
 
 }
+
+-- ─────────────────────────────────────────────────────────────
+-- LOCALE DU JOUEUR (bilingue frFR / enUS, repli sur frFR)
+-- ─────────────────────────────────────────────────────────────
+local function GetPlayerLocale(player)
+    local ok, result = pcall(function()
+        local accountId = player:GetAccountId()
+        local q = AuthDBQuery("SELECT locale FROM account WHERE id = "..accountId..";")
+        if q then
+            local loc = q:GetUInt8(0)
+            if loc == 0 then return "enUS" end
+        end
+        return "frFR"
+    end)
+    if ok and result then return result end
+    return "frFR"
+end
+
+local MKNotif = {
+    frFR = {
+        INVALID_DURATION      = "Durée invalide (1-86400 secondes).",
+        NO_ACTIVE_TIMER       = "Aucun timer actif.",
+        MAIL_SUBJECT          = "Récompense Mythic+",
+        MAIL_BODY             = "Votre inventaire était plein. Voici votre récompense de fin de donjon.",
+        INVALID_DUNGEON       = "Donjon invalide.",
+        MUST_DESTROY_KEYSTONE = "Vous devez détruire votre Clé mythique.",
+        NO_ACTIVE_KEYSTONE    = "Pas de Clé mythique actif.",
+        MAX_LEVEL_REACHED     = "Niveau maximum atteint.",
+        NEED_GOLD_TO_UPGRADE  = "Il vous faut %dg pour améliorer.",
+        INVALID_ITEM          = "Item invalide.",
+        KEYSTONE_NOT_FOUND    = "Clé mythique introuvable dans l'inventaire.",
+        MUST_ENTER_DUNGEON    = "Vous devez entrez dans le donjon avant d'activer votre Clé mythique.",
+        RUN_ALREADY_ACTIVE    = "Un run est déjà en cours dans cette instance.",
+        RUN_ALREADY_COMPLETE  = "Ce run est déjà terminé.",
+        COUNTDOWN_LABEL       = "Mythic+ commence dans…",
+    },
+    enUS = {
+        INVALID_DURATION      = "Invalid duration (1-86400 seconds).",
+        NO_ACTIVE_TIMER       = "No active timer.",
+        MAIL_SUBJECT          = "Mythic+ Reward",
+        MAIL_BODY             = "Your inventory was full. Here is your end-of-dungeon reward.",
+        INVALID_DUNGEON       = "Invalid dungeon.",
+        MUST_DESTROY_KEYSTONE = "You must destroy your Mythic Keystone.",
+        NO_ACTIVE_KEYSTONE    = "No active Mythic Keystone.",
+        MAX_LEVEL_REACHED     = "Maximum level reached.",
+        NEED_GOLD_TO_UPGRADE  = "You need %dg to upgrade.",
+        INVALID_ITEM          = "Invalid item.",
+        KEYSTONE_NOT_FOUND    = "Mythic Keystone not found in your inventory.",
+        MUST_ENTER_DUNGEON    = "You must enter the dungeon before activating your Mythic Keystone.",
+        RUN_ALREADY_ACTIVE    = "A run is already in progress in this instance.",
+        RUN_ALREADY_COMPLETE  = "This run is already complete.",
+        COUNTDOWN_LABEL       = "Mythic+ starts in…",
+    },
+}
+local function L(player)
+    return MKNotif[GetPlayerLocale(player)] or MKNotif.frFR
+end
+
+-- Nom du donjon localisé (repli sur le français si nameEn absent)
+local function LocalizedDungeonName(player, dungeon)
+    if not dungeon then return "?" end
+    if GetPlayerLocale(player) == "enUS" and dungeon.nameEn and dungeon.nameEn ~= "" then
+        return dungeon.nameEn
+    end
+    return dungeon.name
+end
 
 -- ─────────────────────────────────────────────────────────────
 -- ÉTAT DES RUNS
@@ -299,7 +365,7 @@ function TimerHandlers.StartTimer(player, duration, label)
     if not player or not duration then return end
     duration = tonumber(duration)
     if not duration or duration <= 0 or duration > 86400 then
-        AIO.Handle(player, "SystemTimer", "Error", "Durée invalide (1-86400 secondes).")
+        AIO.Handle(player, "SystemTimer", "Error", L(player).INVALID_DURATION)
         return
     end
     ST_Start(player, duration, label)
@@ -310,7 +376,7 @@ function TimerHandlers.TogglePause(player)
     local guid = ST_GUID(player)
     local t = activeTimers[guid]
     if not t then
-        AIO.Handle(player, "SystemTimer", "Error", "Aucun timer actif.")
+        AIO.Handle(player, "SystemTimer", "Error", L(player).NO_ACTIVE_TIMER)
         return
     end
     local now = ST_GetTime()
@@ -376,11 +442,14 @@ local function GetTimeRemaining(run)
     return math.max(0, run.timer - (os.time() - run.startTime))
 end
 
-local function GetActiveAffixes(level)
+local function GetActiveAffixes(player, level)
+    local useEn = GetPlayerLocale(player) == "enUS"
     local list = {}
     for minLvl, aff in pairs(MKS.Config.AFFIXES) do
         if level >= minLvl then
-            table.insert(list, { id=aff.id, name=aff.name, icon=aff.icon, desc=aff.desc })
+            local name = (useEn and aff.nameEn and aff.nameEn ~= "") and aff.nameEn or aff.name
+            local desc = (useEn and aff.descEn and aff.descEn ~= "") and aff.descEn or aff.desc
+            table.insert(list, { id=aff.id, name=name, icon=aff.icon, desc=desc })
         end
     end
     table.sort(list, function(a, b) return a.id < b.id end)
@@ -527,9 +596,9 @@ local function BuildUIPayload(player)
     return {
         level     = level,
         dungeonId = dungeonId,
-        dungeon   = dungeon.name,
+        dungeon   = LocalizedDungeonName(player, dungeon),
         timer     = dungeon.timer,
-        affixes   = GetActiveAffixes(level),
+        affixes   = GetActiveAffixes(player, level),
         mult      = MKS.Config.DIFFICULTY_MULT[level] or 1.0,
     }
 end
@@ -552,7 +621,7 @@ local function SendSelectDungeon(player)
     for id, info in pairs(MKS.Config.DUNGEONS) do
         dungeonsWithLevel[id] = {
             mapId      = info.mapId,
-            name       = info.name,
+            name       = LocalizedDungeonName(player, info),
             bossCount  = info.bossCount,
             timer      = info.timer,
             playerLevel = levels[id] or 0,
@@ -667,8 +736,8 @@ local function GiveRewards(player, level, dungeonId)
         else
             -- Inventaire plein : envoi par boîte aux lettres via Eluna natif
             SendMail(
-                "Récompense Mythic+",
-                "Votre inventaire était plein. Voici votre récompense de fin de donjon.",
+                L(player).MAIL_SUBJECT,
+                L(player).MAIL_BODY,
                 player:GetGUIDLow(),
                 0,       -- expéditeur système
                 61,      -- stationery neutre
@@ -725,7 +794,7 @@ local function CompleteRun(instanceId)
                 newLevel     = newLevel,
                 oldLevel     = run.level,
                 dungeonId    = run.dungeonId,
-                dungeon      = MKS.Config.DUNGEONS[run.dungeonId] and MKS.Config.DUNGEONS[run.dungeonId].name or "?",
+                dungeon      = LocalizedDungeonName(player, MKS.Config.DUNGEONS[run.dungeonId]),
             })
             -- Nettoie le SystemTimer de ce joueur si actif (cleanup sécurisé)
             ST_Stop(player)
@@ -967,11 +1036,11 @@ function MKHandlers.GiveKeystone(player, dungeonId)
     dungeonId     = tonumber(dungeonId) or 0
     local dungeon = MKS.Config.DUNGEONS[dungeonId]
     if not dungeon then
-        AIO.Handle(player, "MKClient", "Error", "Donjon invalide.")
+        AIO.Handle(player, "MKClient", "Error", L(player).INVALID_DUNGEON)
         return
     end
     if player:HasItem(MKS.Config.KEYSTONE_ITEM_ID) then
-        AIO.Handle(player, "MKClient", "Error", "Vous devez détruire votre Clé mythique.")
+        AIO.Handle(player, "MKClient", "Error", L(player).MUST_DESTROY_KEYSTONE)
         return
     end
     -- Récupère le niveau propre à CE donjon (0 si jamais fait > niveau 1)
@@ -983,9 +1052,9 @@ function MKHandlers.GiveKeystone(player, dungeonId)
     AIO.Handle(player, "MKClient", "KeystoneGranted", {
         level     = level,
         dungeonId = dungeonId,
-        dungeon   = dungeon.name,
+        dungeon   = LocalizedDungeonName(player, dungeon),
         timer     = dungeon.timer,
-        affixes   = GetActiveAffixes(level),
+        affixes   = GetActiveAffixes(player, level),
         mult      = MKS.Config.DIFFICULTY_MULT[level] or 1.0,
     })
     Log("Clé mythique donné à " .. player:GetName() .. " – " .. dungeon.name .. " niv." .. level)
@@ -994,17 +1063,17 @@ end
 function MKHandlers.UpgradeKeystone(player)
     local level = GetVar(player, "Level")
     if level <= 0 then
-        AIO.Handle(player, "MKClient", "Error", "Pas de Clé mythique actif.")
+        AIO.Handle(player, "MKClient", "Error", L(player).NO_ACTIVE_KEYSTONE)
         return
     end
     if level >= MKS.Config.MAX_LEVEL then
-        AIO.Handle(player, "MKClient", "Error", "Niveau maximum atteint.")
+        AIO.Handle(player, "MKClient", "Error", L(player).MAX_LEVEL_REACHED)
         return
     end
     local cost = level * 500000
     if player:GetMoney() < cost then
         AIO.Handle(player, "MKClient", "Error",
-            string.format("Il vous faut %dg pour améliorer.", level * 50))
+            string.format(L(player).NEED_GOLD_TO_UPGRADE, level * 50))
         return
     end
     player:ModifyMoney(-cost)
@@ -1015,9 +1084,9 @@ function MKHandlers.UpgradeKeystone(player)
     AIO.Handle(player, "MKClient", "KeystoneUpgraded", {
         level     = newLevel,
         dungeonId = dungeonId,
-        dungeon   = dungeon and dungeon.name or "?",
+        dungeon   = LocalizedDungeonName(player, dungeon),
         timer     = dungeon and dungeon.timer or 0,
-        affixes   = GetActiveAffixes(newLevel),
+        affixes   = GetActiveAffixes(player, newLevel),
         mult      = MKS.Config.DIFFICULTY_MULT[newLevel] or 1.0,
     })
     Log("Clé mythique amélioré " .. level .. " > " .. newLevel .. " par " .. player:GetName())
@@ -1032,11 +1101,11 @@ end
 function MKHandlers.ActivateRun(player, itemID)
     itemID = tonumber(itemID)
     if not itemID or itemID ~= MKS.Config.KEYSTONE_ITEM_ID then
-        AIO.Handle(player, "MKClient", "Error", "Item invalide.")
+        AIO.Handle(player, "MKClient", "Error", L(player).INVALID_ITEM)
         return
     end
     if not player:HasItem(MKS.Config.KEYSTONE_ITEM_ID) then
-        AIO.Handle(player, "MKClient", "Error", "Clé mythique introuvable dans l'inventaire.")
+        AIO.Handle(player, "MKClient", "Error", L(player).KEYSTONE_NOT_FOUND)
         return
     end
 
@@ -1045,8 +1114,7 @@ function MKHandlers.ActivateRun(player, itemID)
     local dungeon   = MKS.Config.DUNGEONS[dungeonId]
 
     if not dungeon or dungeon.mapId ~= mapId then
-        AIO.Handle(player, "MKClient", "Error",
-            "Vous devez entrez dans le donjon avant d'activer votre Clé mythique.")
+        AIO.Handle(player, "MKClient", "Error", L(player).MUST_ENTER_DUNGEON)
         return
     end
 
@@ -1078,11 +1146,11 @@ function MKHandlers.ActivateRun(player, itemID)
     end
 
     if run.activated then
-        AIO.Handle(player, "MKClient", "Error", "Un run est déjà en cours dans cette instance.")
+        AIO.Handle(player, "MKClient", "Error", L(player).RUN_ALREADY_ACTIVE)
         return
     end
     if run.completed then
-        AIO.Handle(player, "MKClient", "Error", "Ce run est déjà terminé.")
+        AIO.Handle(player, "MKClient", "Error", L(player).RUN_ALREADY_COMPLETE)
         return
     end
 
@@ -1100,7 +1168,7 @@ function MKHandlers.ActivateRun(player, itemID)
         local p = GetPlayerByGUIDLow(guidLow)
         if p and p:IsInWorld() then
             -- Overlay SystemTimer (chiffres + sablier)
-            ST_Start(p, cdSec, "Mythic+ commence dans…")
+            ST_Start(p, cdSec, L(p).COUNTDOWN_LABEL)
             -- Notification à la frame MK (masque btnActivate, etc.)
             AIO.Handle(p, "MKClient", "StartCountdown", cdSec)
         end

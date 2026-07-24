@@ -4,6 +4,135 @@ if AIO.AddAddon() then return end
 
 local ItemUpgradeHandlers = AIO.AddHandlers("ItemUpgrade", {})
 
+local UI_LOCALE = (GetLocale and GetLocale() == "enUS") and "enUS" or "frFR"
+
+local STATS_FR = {
+    armor = "Armure",
+    strength = "Force",
+    agility = "Agilit\195\169",
+    stamina = "Endurance",
+    intellect = "Intelligence",
+    spirit = "Esprit",
+    mana = "Mana",
+    health = "Points de vie",
+    defenseRating = "Score de d\195\169fense",
+    parryRating = "Score de parade",
+    dodgeRating = "Score d'esquive",
+    blockRating = "Score de blocage",
+    blockValue = "Valeur de blocage",
+    resilienceRating = "Score de r\195\169silience",
+    spellPower = "Puissance des sorts",
+    spellHealing = "Soins",
+    spellDamage = "D\195\169g\195\162ts des sorts",
+    spellPenetration = "P\195\169n\195\169tration des sorts",
+    manaRegen = "R\195\169g\195\169n. de mana",
+    attackPower = "Puissance d'attaque",
+    rangedAttackPower = "Puissance d'attaque \195\160 distance",
+    hitMeleeRating = "Score de toucher (m\195\170l\195\169e)",
+    hitRangedRating = "Score de toucher (distance)",
+    hitSpellRating = "Score de toucher (sort)",
+    critRating = "Score de coup critique",
+    expertiseRating = "Score d'expertise",
+    hitRating = "Score de toucher",
+    armorPenRating = "Score de p\195\169n\195\169tration d'armure",
+    critMeleeRating = "Score de critique (m\195\170l\195\169e)",
+    critRangedRating = "Score de critique (distance)",
+    critSpellRating = "Score de critique (sort)",
+    hasteRating = "Score de h\195\162te",
+    hasteMeleeRating = "Score de h\195\162te (m\195\170l\195\169e)",
+    hasteRangedRating = "Score de h\195\162te (distance)",
+    hasteSpellRating = "Score de h\195\162te (sort)",
+    healthRegen = "R\195\169g\195\169n. de vie",
+    hitTakenRating = "Score de toucher re\195\167u",
+    hitTakenMeleeRating = "Score de toucher re\195\167u (m\195\170l\195\169e)",
+    hitTakenRangedRating = "Score de toucher re\195\167u (distance)",
+    hitTakenSpellRating = "Score de toucher re\195\167u (sort)",
+    critTakenRating = "Score de critique re\195\167u",
+    critTakenMeleeRating = "Score de critique re\195\167u (m\195\170l\195\169e)",
+    critTakenRangedRating = "Score de critique re\195\167u (distance)",
+    critTakenSpellRating = "Score de critique re\195\167u (sort)",
+    masteryRating = "Score de ma\195\174trise",
+}
+
+local STATS_EN = {
+    armor = "Armor",
+    strength = "Strength",
+    agility = "Agility",
+    stamina = "Stamina",
+    intellect = "Intellect",
+    spirit = "Spirit",
+    mana = "Mana",
+    health = "Health",
+    defenseRating = "Defense Rating",
+    parryRating = "Parry Rating",
+    dodgeRating = "Dodge Rating",
+    blockRating = "Block Rating",
+    blockValue = "Block Value",
+    resilienceRating = "Resilience Rating",
+    spellPower = "Spell Power",
+    spellHealing = "Healing",
+    spellDamage = "Spell Damage",
+    spellPenetration = "Spell Penetration",
+    manaRegen = "Mana Regen",
+    attackPower = "Attack Power",
+    rangedAttackPower = "Ranged Attack Power",
+    hitMeleeRating = "Melee Hit Rating",
+    hitRangedRating = "Ranged Hit Rating",
+    hitSpellRating = "Spell Hit Rating",
+    critRating = "Critical Strike Rating",
+    expertiseRating = "Expertise Rating",
+    hitRating = "Hit Rating",
+    armorPenRating = "Armor Penetration Rating",
+    critMeleeRating = "Melee Critical Strike Rating",
+    critRangedRating = "Ranged Critical Strike Rating",
+    critSpellRating = "Spell Critical Strike Rating",
+    hasteRating = "Haste Rating",
+    hasteMeleeRating = "Melee Haste Rating",
+    hasteRangedRating = "Ranged Haste Rating",
+    hasteSpellRating = "Spell Haste Rating",
+    healthRegen = "Health Regen",
+    hitTakenRating = "Hit Taken Rating",
+    hitTakenMeleeRating = "Melee Hit Taken Rating",
+    hitTakenRangedRating = "Ranged Hit Taken Rating",
+    hitTakenSpellRating = "Spell Hit Taken Rating",
+    critTakenRating = "Critical Strike Taken Rating",
+    critTakenMeleeRating = "Melee Critical Strike Taken Rating",
+    critTakenRangedRating = "Ranged Critical Strike Taken Rating",
+    critTakenSpellRating = "Spell Critical Strike Taken Rating",
+    masteryRating = "Mastery Rating",
+}
+
+local Locales = {
+    frFR = {
+        TITLE = "Am\195\169lioration d'objet",
+        CURRENT_LABEL = "Actuel",
+        NEXT_LABEL = "Am\195\169liorer",
+        UPGRADE_BUTTON = "Am\195\169liorer",
+        TIER_PREFIX = "Palier : ",
+        TIER_MAX = "Palier maximum",
+        ITEM_LEVEL_PREFIX = "Niveau d'objet ",
+        COST_PREFIX = "Co\195\187t : ",
+        COST_ZERO = "Co\195\187t : 0 |TInterface\\MoneyFrame\\UI-GoldIcon:12:12:2:0|t",
+        CHAT_PREFIX = "[Am\195\169lioration d'objet]",
+        STATS = STATS_FR,
+    },
+    enUS = {
+        TITLE = "Item Upgrade",
+        CURRENT_LABEL = "Current",
+        NEXT_LABEL = "Upgrade",
+        UPGRADE_BUTTON = "Upgrade",
+        TIER_PREFIX = "Tier: ",
+        TIER_MAX = "Maximum Tier",
+        ITEM_LEVEL_PREFIX = "Item Level ",
+        COST_PREFIX = "Cost: ",
+        COST_ZERO = "Cost: 0 |TInterface\\MoneyFrame\\UI-GoldIcon:12:12:2:0|t",
+        CHAT_PREFIX = "[Item Upgrade]",
+        STATS = STATS_EN,
+    },
+}
+
+local L = Locales[UI_LOCALE] or Locales.frFR
+
 local OPEN_TALENT_WINDOW_SOUND = "Sound\\INTERFACE\\UI_Transmogrify_Apply.OGG"
 local CLOSE_TALENT_WINDOW_SOUND = "Sound\\INTERFACE\\UI_VoidStorage_Undo.OGG"
 local REFORGING_TALENT_WINDOW_SOUND = "Sound\\INTERFACE\\ui_reforging_reforge.ogg"
@@ -47,7 +176,7 @@ local function CreateMainFrame()
     -- Titre du cadre
     mainFrame.title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     mainFrame.title:SetPoint("TOP", mainFrame, "TOP", 12, -12)
-    mainFrame.title:SetText("Amélioration d'objet")
+    mainFrame.title:SetText(L.TITLE)
     
     -- Slot pour l'item
     itemSlot = CreateFrame("Button", "ItemUpgradeSlot", mainFrame)
@@ -114,7 +243,7 @@ local function CreateMainFrame()
     -- Section Current (Gauche)
     mainFrame.currentLabel = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
     mainFrame.currentLabel:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 100, -180)
-    mainFrame.currentLabel:SetText("Actuel")
+    mainFrame.currentLabel:SetText(L.CURRENT_LABEL)
     
     mainFrame.currentTier = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     mainFrame.currentTier:SetPoint("TOPLEFT", mainFrame.currentLabel, "BOTTOMLEFT", -50, -50)
@@ -140,7 +269,7 @@ local function CreateMainFrame()
     -- Section Next Upgrade (Droite)
     mainFrame.nextLabel = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
     mainFrame.nextLabel:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -80, -180)
-    mainFrame.nextLabel:SetText("Améliorer")
+    mainFrame.nextLabel:SetText(L.NEXT_LABEL)
     mainFrame.nextLabel:SetJustifyH("LEFT")
     
     mainFrame.nextTier = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -167,13 +296,13 @@ local function CreateMainFrame()
     -- Total Cost
     mainFrame.costText = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     mainFrame.costText:SetPoint("BOTTOM", mainFrame, "BOTTOM", 0, 60)
-	mainFrame.costText:SetText("Coût : 0 |TInterface\\MoneyFrame\\UI-GoldIcon:12:12:2:0|t")
+	mainFrame.costText:SetText(L.COST_ZERO)
     
     -- Bouton Améliorer
     mainFrame.upgradeButton = CreateFrame("Button", "ItemUpgradeButton", mainFrame, "GameMenuButtonTemplate")
     mainFrame.upgradeButton:SetSize(180, 35)
     mainFrame.upgradeButton:SetPoint("BOTTOM", mainFrame, "BOTTOM", 0, 20)
-    mainFrame.upgradeButton:SetText("Améliorer")
+    mainFrame.upgradeButton:SetText(L.UPGRADE_BUTTON)
     mainFrame.upgradeButton:SetNormalFontObject("GameFontNormal")
     mainFrame.upgradeButton:SetHighlightFontObject("GameFontHighlight")
     mainFrame.upgradeButton:Hide()
@@ -209,7 +338,7 @@ function ClearItemInfo()
     mainFrame.nextItemName:SetText("")
     mainFrame.nextItemLevel:SetText("")
     mainFrame.nextStats:SetText("")
-    mainFrame.costText:SetText("Coût : 0 |TInterface\\MoneyFrame\\UI-GoldIcon:12:12:2:0|t")
+    mainFrame.costText:SetText(L.COST_ZERO)
     mainFrame.upgradeButton:Hide()
     
     -- Réinitialiser les variables
@@ -223,71 +352,71 @@ local function FormatStats(stats)
     local statsText = ""
     local statsOrder = {
         -- Armure
-        {key = "armor", name = "Armure"},
+        {key = "armor", name = L.STATS.armor},
         
         -- Stats de base
-        {key = "strength", name = "Force"},
-        {key = "agility", name = "Agilité"},
-        {key = "stamina", name = "Endurance"},
-        {key = "intellect", name = "Intelligence"},
-        {key = "spirit", name = "Esprit"},
-        {key = "mana", name = "Mana"},
-        {key = "health", name = "Points de vie"},
+        {key = "strength", name = L.STATS.strength},
+        {key = "agility", name = L.STATS.agility},
+        {key = "stamina", name = L.STATS.stamina},
+        {key = "intellect", name = L.STATS.intellect},
+        {key = "spirit", name = L.STATS.spirit},
+        {key = "mana", name = L.STATS.mana},
+        {key = "health", name = L.STATS.health},
         
         -- Défense
-        {key = "defenseRating", name = "Score de défense"},
-		{key = "parryRating", name = "Score de parade"},
-        {key = "dodgeRating", name = "Score d'esquive"},
-        {key = "blockRating", name = "Score de blocage"},
-        {key = "blockValue", name = "Valeur de blocage"},
-        {key = "resilienceRating", name = "Score de résilience"},
+        {key = "defenseRating", name = L.STATS.defenseRating},
+		{key = "parryRating", name = L.STATS.parryRating},
+        {key = "dodgeRating", name = L.STATS.dodgeRating},
+        {key = "blockRating", name = L.STATS.blockRating},
+        {key = "blockValue", name = L.STATS.blockValue},
+        {key = "resilienceRating", name = L.STATS.resilienceRating},
 		
 		-- Sorts
-        {key = "spellPower", name = "Puissance des sorts"},
-        {key = "spellHealing", name = "Soins"},
-        {key = "spellDamage", name = "Dégâts des sorts"},
-        {key = "spellPenetration", name = "Pénétration des sorts"},
-        {key = "manaRegen", name = "Régén. de mana"},
+        {key = "spellPower", name = L.STATS.spellPower},
+        {key = "spellHealing", name = L.STATS.spellHealing},
+        {key = "spellDamage", name = L.STATS.spellDamage},
+        {key = "spellPenetration", name = L.STATS.spellPenetration},
+        {key = "manaRegen", name = L.STATS.manaRegen},
 		
 		-- Combat physique
-        {key = "attackPower", name = "Puissance d'attaque"},
-        {key = "rangedAttackPower", name = "Puissance d'attaque à distance"},
+        {key = "attackPower", name = L.STATS.attackPower},
+        {key = "rangedAttackPower", name = L.STATS.rangedAttackPower},
 		
 		-- Toucher
-        {key = "hitMeleeRating", name = "Score de toucher (mêlée)"},
-        {key = "hitRangedRating", name = "Score de toucher (distance)"},
-        {key = "hitSpellRating", name = "Score de toucher (sort)"},
+        {key = "hitMeleeRating", name = L.STATS.hitMeleeRating},
+        {key = "hitRangedRating", name = L.STATS.hitRangedRating},
+        {key = "hitSpellRating", name = L.STATS.hitSpellRating},
 		
 		-- Critique
-        {key = "critRating", name = "Score de coup critique"},
-		{key = "expertiseRating", name = "Score d'expertise"},
-		{key = "hitRating", name = "Score de toucher"},
-		{key = "armorPenRating", name = "Score de pénétration d'armure"},
-        {key = "critMeleeRating", name = "Score de critique (mêlée)"},
-        {key = "critRangedRating", name = "Score de critique (distance)"},
-        {key = "critSpellRating", name = "Score de critique (sort)"},
+        {key = "critRating", name = L.STATS.critRating},
+		{key = "expertiseRating", name = L.STATS.expertiseRating},
+		{key = "hitRating", name = L.STATS.hitRating},
+		{key = "armorPenRating", name = L.STATS.armorPenRating},
+        {key = "critMeleeRating", name = L.STATS.critMeleeRating},
+        {key = "critRangedRating", name = L.STATS.critRangedRating},
+        {key = "critSpellRating", name = L.STATS.critSpellRating},
 		
 		-- Hâte
-        {key = "hasteRating", name = "Score de hâte"},
-        {key = "hasteMeleeRating", name = "Score de hâte (mêlée)"},
-        {key = "hasteRangedRating", name = "Score de hâte (distance)"},
-        {key = "hasteSpellRating", name = "Score de hâte (sort)"},
+        {key = "hasteRating", name = L.STATS.hasteRating},
+        {key = "hasteMeleeRating", name = L.STATS.hasteMeleeRating},
+        {key = "hasteRangedRating", name = L.STATS.hasteRangedRating},
+        {key = "hasteSpellRating", name = L.STATS.hasteSpellRating},
         
         -- Régénération
-        {key = "healthRegen", name = "Régén. de vie"},
+        {key = "healthRegen", name = L.STATS.healthRegen},
         
         -- Ratings de défense contre attaques
-        {key = "hitTakenRating", name = "Score de toucher reçu"},
-        {key = "hitTakenMeleeRating", name = "Score de toucher reçu (mêlée)"},
-        {key = "hitTakenRangedRating", name = "Score de toucher reçu (distance)"},
-        {key = "hitTakenSpellRating", name = "Score de toucher reçu (sort)"},
-        {key = "critTakenRating", name = "Score de critique reçu"},
-        {key = "critTakenMeleeRating", name = "Score de critique reçu (mêlée)"},
-        {key = "critTakenRangedRating", name = "Score de critique reçu (distance)"},
-        {key = "critTakenSpellRating", name = "Score de critique reçu (sort)"},
+        {key = "hitTakenRating", name = L.STATS.hitTakenRating},
+        {key = "hitTakenMeleeRating", name = L.STATS.hitTakenMeleeRating},
+        {key = "hitTakenRangedRating", name = L.STATS.hitTakenRangedRating},
+        {key = "hitTakenSpellRating", name = L.STATS.hitTakenSpellRating},
+        {key = "critTakenRating", name = L.STATS.critTakenRating},
+        {key = "critTakenMeleeRating", name = L.STATS.critTakenMeleeRating},
+        {key = "critTakenRangedRating", name = L.STATS.critTakenRangedRating},
+        {key = "critTakenSpellRating", name = L.STATS.critTakenSpellRating},
         
         -- Maîtrise (Cataclysm+)
-        {key = "masteryRating", name = "Score de maîtrise"}
+        {key = "masteryRating", name = L.STATS.masteryRating}
     }
     
     for _, stat in ipairs(statsOrder) do
@@ -306,71 +435,71 @@ local function FormatStatsWithDiff(currentStats, nextStats)
     local statsText = ""
     local statsOrder = {
         -- Armure
-        {key = "armor", name = "Armure"},
+        {key = "armor", name = L.STATS.armor},
         
         -- Stats de base
-        {key = "strength", name = "Force"},
-        {key = "agility", name = "Agilité"},
-        {key = "stamina", name = "Endurance"},
-        {key = "intellect", name = "Intelligence"},
-        {key = "spirit", name = "Esprit"},
-        {key = "mana", name = "Mana"},
-        {key = "health", name = "Points de vie"},
+        {key = "strength", name = L.STATS.strength},
+        {key = "agility", name = L.STATS.agility},
+        {key = "stamina", name = L.STATS.stamina},
+        {key = "intellect", name = L.STATS.intellect},
+        {key = "spirit", name = L.STATS.spirit},
+        {key = "mana", name = L.STATS.mana},
+        {key = "health", name = L.STATS.health},
         
         -- Défense
-        {key = "defenseRating", name = "Score de défense"},
-		{key = "parryRating", name = "Score de parade"},
-        {key = "dodgeRating", name = "Score d'esquive"},
-        {key = "blockRating", name = "Score de blocage"},
-        {key = "blockValue", name = "Valeur de blocage"},
-        {key = "resilienceRating", name = "Score de résilience"},
+        {key = "defenseRating", name = L.STATS.defenseRating},
+		{key = "parryRating", name = L.STATS.parryRating},
+        {key = "dodgeRating", name = L.STATS.dodgeRating},
+        {key = "blockRating", name = L.STATS.blockRating},
+        {key = "blockValue", name = L.STATS.blockValue},
+        {key = "resilienceRating", name = L.STATS.resilienceRating},
 		
 		-- Sorts
-        {key = "spellPower", name = "Puissance des sorts"},
-        {key = "spellHealing", name = "Soins"},
-        {key = "spellDamage", name = "Dégâts des sorts"},
-        {key = "spellPenetration", name = "Pénétration des sorts"},
-        {key = "manaRegen", name = "Régén. de mana"},
+        {key = "spellPower", name = L.STATS.spellPower},
+        {key = "spellHealing", name = L.STATS.spellHealing},
+        {key = "spellDamage", name = L.STATS.spellDamage},
+        {key = "spellPenetration", name = L.STATS.spellPenetration},
+        {key = "manaRegen", name = L.STATS.manaRegen},
 		
 		-- Combat physique
-        {key = "attackPower", name = "Puissance d'attaque"},
-        {key = "rangedAttackPower", name = "Puissance d'attaque à distance"},
+        {key = "attackPower", name = L.STATS.attackPower},
+        {key = "rangedAttackPower", name = L.STATS.rangedAttackPower},
 		
 		-- Toucher
-        {key = "hitMeleeRating", name = "Score de toucher (mêlée)"},
-        {key = "hitRangedRating", name = "Score de toucher (distance)"},
-        {key = "hitSpellRating", name = "Score de toucher (sort)"},
+        {key = "hitMeleeRating", name = L.STATS.hitMeleeRating},
+        {key = "hitRangedRating", name = L.STATS.hitRangedRating},
+        {key = "hitSpellRating", name = L.STATS.hitSpellRating},
 		
 		-- Critique
-        {key = "critRating", name = "Score de coup critique"},
-		{key = "expertiseRating", name = "Score d'expertise"},
-		{key = "hitRating", name = "Score de toucher"},
-		{key = "armorPenRating", name = "Score de pénétration d'armure"},
-        {key = "critMeleeRating", name = "Score de critique (mêlée)"},
-        {key = "critRangedRating", name = "Score de critique (distance)"},
-        {key = "critSpellRating", name = "Score de critique (sort)"},
+        {key = "critRating", name = L.STATS.critRating},
+		{key = "expertiseRating", name = L.STATS.expertiseRating},
+		{key = "hitRating", name = L.STATS.hitRating},
+		{key = "armorPenRating", name = L.STATS.armorPenRating},
+        {key = "critMeleeRating", name = L.STATS.critMeleeRating},
+        {key = "critRangedRating", name = L.STATS.critRangedRating},
+        {key = "critSpellRating", name = L.STATS.critSpellRating},
 		
 		-- Hâte
-        {key = "hasteRating", name = "Score de hâte"},
-        {key = "hasteMeleeRating", name = "Score de hâte (mêlée)"},
-        {key = "hasteRangedRating", name = "Score de hâte (distance)"},
-        {key = "hasteSpellRating", name = "Score de hâte (sort)"},
+        {key = "hasteRating", name = L.STATS.hasteRating},
+        {key = "hasteMeleeRating", name = L.STATS.hasteMeleeRating},
+        {key = "hasteRangedRating", name = L.STATS.hasteRangedRating},
+        {key = "hasteSpellRating", name = L.STATS.hasteSpellRating},
         
         -- Régénération
-        {key = "healthRegen", name = "Régén. de vie"},
+        {key = "healthRegen", name = L.STATS.healthRegen},
         
         -- Ratings de défense contre attaques
-        {key = "hitTakenRating", name = "Score de toucher reçu"},
-        {key = "hitTakenMeleeRating", name = "Score de toucher reçu (mêlée)"},
-        {key = "hitTakenRangedRating", name = "Score de toucher reçu (distance)"},
-        {key = "hitTakenSpellRating", name = "Score de toucher reçu (sort)"},
-        {key = "critTakenRating", name = "Score de critique reçu"},
-        {key = "critTakenMeleeRating", name = "Score de critique reçu (mêlée)"},
-        {key = "critTakenRangedRating", name = "Score de critique reçu (distance)"},
-        {key = "critTakenSpellRating", name = "Score de critique reçu (sort)"},
+        {key = "hitTakenRating", name = L.STATS.hitTakenRating},
+        {key = "hitTakenMeleeRating", name = L.STATS.hitTakenMeleeRating},
+        {key = "hitTakenRangedRating", name = L.STATS.hitTakenRangedRating},
+        {key = "hitTakenSpellRating", name = L.STATS.hitTakenSpellRating},
+        {key = "critTakenRating", name = L.STATS.critTakenRating},
+        {key = "critTakenMeleeRating", name = L.STATS.critTakenMeleeRating},
+        {key = "critTakenRangedRating", name = L.STATS.critTakenRangedRating},
+        {key = "critTakenSpellRating", name = L.STATS.critTakenSpellRating},
         
         -- Maîtrise (Cataclysm+)
-        {key = "masteryRating", name = "Score de maîtrise"}
+        {key = "masteryRating", name = L.STATS.masteryRating}
     }
     
     for _, stat in ipairs(statsOrder) do
@@ -410,10 +539,10 @@ function ItemUpgradeHandlers.ShowItemInfo(player, current, next)
     mainFrame.itemName:SetTextColor(r, g, b)
     
     -- Section ACTUEL (gauche)
-    mainFrame.currentTier:SetText("Palier : " .. (current.tier or ""))
+    mainFrame.currentTier:SetText(L.TIER_PREFIX .. (current.tier or ""))
     mainFrame.currentItemName:SetText(current.name)
     mainFrame.currentItemName:SetTextColor(r, g, b)
-    mainFrame.currentItemLevel:SetText("Niveau d'objet " .. (current.itemLevel or 0))
+    mainFrame.currentItemLevel:SetText(L.ITEM_LEVEL_PREFIX .. (current.itemLevel or 0))
     mainFrame.currentStats:SetText(FormatStats(current))
     
     -- Section AMÉLIORER (droite)
@@ -421,25 +550,25 @@ function ItemUpgradeHandlers.ShowItemInfo(player, current, next)
         local nextQuality = next.quality or 0
         local nextR, nextG, nextB = GetItemQualityColor(nextQuality)
         
-        mainFrame.nextTier:SetText("Palier : " .. (next.tier or ""))
+        mainFrame.nextTier:SetText(L.TIER_PREFIX .. (next.tier or ""))
         mainFrame.nextItemName:SetText(next.name)
         mainFrame.nextItemName:SetTextColor(nextR, nextG, nextB)
         
         -- Affichage de l'item level sans différence
-        mainFrame.nextItemLevel:SetText("Niveau d'objet " .. (next.itemLevel or 0))
+        mainFrame.nextItemLevel:SetText(L.ITEM_LEVEL_PREFIX .. (next.itemLevel or 0))
         
         -- Stats simples comme dans "Actuel"
         mainFrame.nextStats:SetText(FormatStats(next))
         -- Coût
         local cost = next.cost or 0
-        mainFrame.costText:SetText("Coût : " .. cost .. " |TInterface\\MoneyFrame\\UI-GoldIcon:12:12:2:0|t")
+        mainFrame.costText:SetText(L.COST_PREFIX .. cost .. " |TInterface\\MoneyFrame\\UI-GoldIcon:12:12:2:0|t")
         
         -- Afficher le bouton
         mainFrame.upgradeButton:Show()
 		PlaySoundFile(REFORGING_TALENT_WINDOW_SOUND)
     else
         -- Pas de palier suivant
-        mainFrame.nextTier:SetText("Palier maximum")
+        mainFrame.nextTier:SetText(L.TIER_MAX)
         mainFrame.nextItemName:SetText("")
         mainFrame.nextItemLevel:SetText("")
         mainFrame.nextStats:SetText("")
@@ -462,7 +591,7 @@ end
 
 -- Handler pour afficher un message
 function ItemUpgradeHandlers.ShowMessage(player, message)
-    DEFAULT_CHAT_FRAME:AddMessage("|cFF00FF00[Amélioration d'objet]|r " .. message)
+    DEFAULT_CHAT_FRAME:AddMessage("|cFF00FF00" .. L.CHAT_PREFIX .. "|r " .. message)
 end
 
 -- Commande slash pour ouvrir le cadre

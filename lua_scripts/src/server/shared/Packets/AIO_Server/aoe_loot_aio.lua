@@ -6,6 +6,22 @@ if AIO.AddAddon() then
         player:SetData("AOE_LOOT_STATUS", status and true or false)
     end
 else
+    -- ------------------------------------------------------------
+    -- Locale (bilingue frFR / enUS, repli sur frFR)
+    -- ------------------------------------------------------------
+    local UI_LOCALE = (GetLocale and GetLocale() == "enUS") and "enUS" or "frFR"
+    local AoeLootLocales = {
+        frFR = {
+            LABEL   = " Ramassage de zone",
+            TOOLTIP = "Fouille plusieurs cadavres à la fois dans un rayon de 50 mètres.",
+        },
+        enUS = {
+            LABEL   = " AoE Looting",
+            TOOLTIP = "Loots multiple corpses at once within a 50 yard radius.",
+        },
+    }
+    local AoeLootL = AoeLootLocales[UI_LOCALE] or AoeLootLocales.frFR
+
     AOE_LOOT_STATUS = AOE_LOOT_STATUS or false;
     AIO.AddSavedVarChar("AOE_LOOT_STATUS");
 
@@ -21,8 +37,8 @@ else
     SetAndSendStatus(InterfaceOptionsControlsPanelAoeLoot);
 
     -- Checkbox label and tooltip text
-    InterfaceOptionsControlsPanelAoeLoot_GlobalNameText:SetText(" Ramassage de zone");
-    InterfaceOptionsControlsPanelAoeLoot.tooltipText = "Fouille plusieurs cadavres à la fois dans un rayon de 50 mètres.";
+    InterfaceOptionsControlsPanelAoeLoot_GlobalNameText:SetText(AoeLootL.LABEL);
+    InterfaceOptionsControlsPanelAoeLoot.tooltipText = AoeLootL.TOOLTIP;
     
     InterfaceOptionsControlsPanelAoeLoot:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT");

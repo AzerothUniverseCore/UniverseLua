@@ -147,6 +147,129 @@ local function CacheClear(guid_low)
     _G.RebirthCache[guid_low] = nil
 end
 
+-- ============================================================================
+-- LOCALISATION (frFR / enUS) -- server-side notification messages + DB name
+-- selection, no client round-trip needed.
+--
+-- This is a pure server package (rebirth.zip has no client Lua/XML files),
+-- so unlike Mod_Me_Panel/Mod_Me_Convert (which get the client's own
+-- GetLocale() over AIO), the locale has to be detected from something the
+-- server already knows on its own : TrinityCore's `account` table (auth
+-- database) stores a numeric `locale` column, set by the client itself at
+-- login, using the exact same LocaleConstant ordering as the DBC-derived
+-- Name1/Name3 columns used elsewhere in this project (0 = enUS, 2 = frFR).
+-- Wrapped end-to-end in pcall : if AuthDBQuery/the account table/column
+-- aren't reachable for any reason on this setup, this silently falls back
+-- to frFR (this system's original, always-safe default) instead of ever
+-- erroring out of a hook.
+-- ============================================================================
+
+local LOCALE_ENUS_ID = 0
+
+local function GetPlayerLocale(player)
+    local ok, result = pcall(function()
+        if not player then
+            return nil
+        end
+        local account_id = player:GetAccountId()
+        if not account_id then
+            return nil
+        end
+        return AuthDBQuery("SELECT locale FROM account WHERE id = " .. account_id .. ";")
+    end)
+
+    if ok and result then
+        local ok2, locale_id = pcall(function() return result:GetUInt8(0) end)
+        if ok2 and locale_id == LOCALE_ENUS_ID then
+            return "enUS"
+        end
+    end
+
+    return "frFR"
+end
+
+--- Picks the DB-editable display name for the requesting player's locale
+--- (rebirth_config_pierre_options / rebirth_config_proof_teleports' `name`
+--- = frFR, `name_en` = enUS). Returns nil -- not the other locale's text --
+--- when the column for THIS locale is unset, so an enUS client never sees
+--- leftover French text (or vice versa) : nil means "let the client fall
+--- back to its own OPTIONS_INFO/PROOF_INFO", exactly like before this
+--- system supported more than one language.
+local function PickLocalizedName(entry, locale)
+    local value = (locale == "enUS") and entry.name_en or entry.name
+    if value and value ~= "" then
+        return value
+    end
+    return nil
+end
+
+--- Notification message templates, keyed by locale then by message id.
+--- Dynamic values (required level, seconds remaining, etc.) are injected
+--- via string.format -- see Notify() below.
+local NOTICES = {
+    frFR = {
+        OPTION_LOCKED = "|CFF00A2FFCette option est verrouillée. Niveau de Rebirth %d requis.|r",
+        ALL_BUFFS = "|CFF00A2FFVous bénéficiez de toutes les améliorations d'état possible !|r",
+        HEAL = "|CFF00A2FFVous revoila en bonne santé !|r",
+        REMOVE_SICKNESS = "|CFF00A2FFVous revoila prêt aux combats !|r",
+        REPAIR = "|CFF00A2FFVotre équipement est réparé !|r",
+        RESET_TALENTS = "|CFF00A2FFVos talents ont été réinitialisés|r",
+        SPELLS_COOLDOWN_WAIT = "|cff00f0f0Encore|r |cffffff00%d secondes|r |cff00f0f0avant la réinitialisation des sorts.|r",
+        RESET_SPELLS = "|CFF00A2FFVos temps de recharge de vos sorts ont été réinitialisés|r",
+        REMOVE_DESERTER = "|CFF00A2FFVous revoila prêt pour un nouveau champs de bataille !|r",
+        RESET_INSTANCES = "|CFF00A2FFVos instances ont été réinitalisées.|r",
+        TELEPORT_LOCKED = "|CFF00A2FFCette destination est verrouillée. Niveau de Rebirth %d requis.|r",
+        TELEPORT_SUCCESS = "Tuer Preuve du rebirth %d pour être récompenser !",
+        HERITAGE_LOCKED = "|CFF00A2FFCet objet Héritage est verrouillé. Niveau de Rebirth %d requis.|r",
+        HERITAGE_GRANTED = "|CFF00A2FFObjet Héritage ajouté à votre inventaire !|r",
+        REWARD_LOCKED = "|CFF00A2FFCette récompense est verrouillée. Niveau de Rebirth %d requis.|r",
+        REWARD_LIMIT = "|CFF00A2FFVous avez atteint la limite de réclamation pour cette récompense (%d).|r",
+        REWARD_GRANTED = "|CFF00A2FFRécompense ajoutée à votre inventaire !|r",
+        NOT_IN_BG_ARENA = "|CFF00A2FFVous ne pouvez pas utiliser votre Pierre de Rebirth depuis un champ de bataille ou une arène.|r",
+        NOT_IN_COMBAT = "|CFF00A2FFRetentez une fois votre combat fini!|r",
+    },
+    enUS = {
+        OPTION_LOCKED = "|CFF00A2FFThis option is locked. Rebirth level %d required.|r",
+        ALL_BUFFS = "|CFF00A2FFYou now have every possible state improvement!|r",
+        HEAL = "|CFF00A2FFYou're back in good health!|r",
+        REMOVE_SICKNESS = "|CFF00A2FFYou're ready for battle again!|r",
+        REPAIR = "|CFF00A2FFYour equipment has been repaired!|r",
+        RESET_TALENTS = "|CFF00A2FFYour talents have been reset|r",
+        SPELLS_COOLDOWN_WAIT = "|cff00f0f0Still|r |cffffff00%d seconds|r |cff00f0f0before spell cooldowns can be reset again.|r",
+        RESET_SPELLS = "|CFF00A2FFYour spell cooldowns have been reset|r",
+        REMOVE_DESERTER = "|CFF00A2FFYou're ready for a new battleground!|r",
+        RESET_INSTANCES = "|CFF00A2FFYour instances have been reset.|r",
+        TELEPORT_LOCKED = "|CFF00A2FFThis destination is locked. Rebirth level %d required.|r",
+        TELEPORT_SUCCESS = "Kill Proof of Rebirth %d to be rewarded!",
+        HERITAGE_LOCKED = "|CFF00A2FFThis Heritage item is locked. Rebirth level %d required.|r",
+        HERITAGE_GRANTED = "|CFF00A2FFHeritage item added to your inventory!|r",
+        REWARD_LOCKED = "|CFF00A2FFThis reward is locked. Rebirth level %d required.|r",
+        REWARD_LIMIT = "|CFF00A2FFYou have reached the claim limit for this reward (%d).|r",
+        REWARD_GRANTED = "|CFF00A2FFReward added to your inventory!|r",
+        NOT_IN_BG_ARENA = "|CFF00A2FFYou cannot use your Pierre de Rebirth from a battleground or arena.|r",
+        NOT_IN_COMBAT = "|CFF00A2FFTry again once you're out of combat!|r",
+    },
+}
+
+--- Sends a SendNotification to `player`, in their own locale, looking up
+--- `key` in NOTICES and formatting any extra varargs into it via
+--- string.format (only when varargs are actually passed, so plain
+--- messages with literal "%" characters -- none currently, but just in
+--- case -- are never mistakenly run through string.format).
+local function Notify(player, key, ...)
+    local locale = GetPlayerLocale(player)
+    local template = (NOTICES[locale] or NOTICES.frFR)[key]
+    if not template then
+        return
+    end
+
+    if select("#", ...) > 0 then
+        player:SendNotification(string.format(template, ...))
+    else
+        player:SendNotification(template)
+    end
+end
+
 ---
 --- Reads a Rebirth level/experience row synchronously, routing to
 --- account_rebirth or character_rebirth depending on LEVEL_LINKED_TO_ACCOUNT.
@@ -398,6 +521,11 @@ end
 Hook._UpdatePlayerExperience = UpdatePlayerExperience
 Hook.CacheGet = CacheGet
 Hook.CacheSet = CacheSet
+-- Exposed for the standalone modules (rebirth_anniversary.lua,
+-- rebirth_experience_item_explosion.lua / _infusion.lua) so their own
+-- SendNotification calls can be localized too, without duplicating the
+-- account.locale lookup logic in every file.
+Hook.GetPlayerLocale = GetPlayerLocale
 
 -- ============================================================================
 -- CATEGORIES PAYLOAD (Paragon-style : 4 category rows, replacing stats)
@@ -423,7 +551,7 @@ end
 --- hardcoded OPTIONS_TIER_1_LEVEL/OPTIONS_TIER_2_LEVEL + TIER_2_OPTIONS set.
 --- The buff/effect LOGIC per option id stays in Lua (TriggerPierreOption).
 ---
-local function BuildPierreEntries(rebirth_level)
+local function BuildPierreEntries(rebirth_level, locale)
     local entries = {}
     for _, opt in ipairs(Config:GetPierreOptions()) do
         table.insert(entries, {
@@ -431,9 +559,11 @@ local function BuildPierreEntries(rebirth_level)
             requiredLevel = opt.level,
             unlocked = rebirth_level >= opt.level,
             -- DB-editable display fields (rebirth_config_pierre_options.name
-            -- / icon) : empty string means "not set", client falls back to
-            -- Rebirth_Locales.lua's OPTIONS_INFO exactly as before.
-            name = opt.name,
+            -- / name_en / icon) : nil/empty means "not set for this
+            -- locale", client falls back to Rebirth_Locales.lua's
+            -- OPTIONS_INFO exactly as before. PickLocalizedName picks
+            -- `name` (frFR) or `name_en` (enUS) per the requesting player.
+            name = PickLocalizedName(opt, locale),
             icon = opt.icon,
         })
     end
@@ -447,14 +577,14 @@ end
 --- Builds the "Pierre Preuve" category entries (teleport milestones), fully
 --- database-editable via Config:GetProofTeleports() (rebirth_config_proof_teleports).
 ---
-local function BuildProofEntries(rebirth_level)
+local function BuildProofEntries(rebirth_level, locale)
     local entries = {}
     for _, t in ipairs(Config:GetProofTeleports()) do
         table.insert(entries, {
             id = t.id,
             requiredLevel = t.level,
             unlocked = rebirth_level >= t.level,
-            name = t.name,
+            name = PickLocalizedName(t, locale),
             icon = t.icon,
         })
     end
@@ -467,7 +597,7 @@ end
 --- NO claim limit at all : `claimed` is always false, exactly like
 --- Pierre/Pierre Preuve, freely re-claimable once unlocked.
 ---
-local function BuildHeritageEntries(rebirth_level)
+local function BuildHeritageEntries(rebirth_level, locale)
     local entries = {}
     for _, t in ipairs(Config:GetHeritageItems()) do
         table.insert(entries, {
@@ -475,12 +605,12 @@ local function BuildHeritageEntries(rebirth_level)
             requiredLevel = t.level,
             unlocked = rebirth_level >= t.level,
             claimed = false,
-            -- DB-editable name/icon (rebirth_config_heritage_items). Empty
-            -- by default (no known real name/icon data exists for these
-            -- custom items), client falls back to GetItemInfo()/"?" exactly
-            -- as before -- setting these explicitly in DB is what
-            -- permanently fixes the "?" sync issue for a given item.
-            name = t.name,
+            -- DB-editable name/icon (rebirth_config_heritage_items.name /
+            -- name_en / icon). PickLocalizedName picks `name` (frFR) or
+            -- `name_en` (enUS) per the requesting player, same as
+            -- Pierre/Pierre Preuve above ; nil falls back to
+            -- GetItemInfo()/"?" client-side exactly as before.
+            name = PickLocalizedName(t, locale),
             icon = t.icon,
         })
     end
@@ -497,7 +627,7 @@ end
 --- @param rebirth_level The account's current Rebirth level
 --- @param claim_counts Map of item_id -> claim_count (Repository:GetClaimCounts)
 ---
-local function BuildRewardEntries(rebirth_level, claim_counts)
+local function BuildRewardEntries(rebirth_level, claim_counts, locale)
     local entries = {}
     for _, t in ipairs(Config:GetRewardItems()) do
         local count = claim_counts[t.item] or 0
@@ -510,8 +640,8 @@ local function BuildRewardEntries(rebirth_level, claim_counts)
             claimCount = count,
             maxClaims = t.max_claims or 0,
             -- DB-editable name/icon (rebirth_config_reward_items), same
-            -- reasoning as Heritage above.
-            name = t.name,
+            -- locale-aware reasoning as Heritage above.
+            name = PickLocalizedName(t, locale),
             icon = t.icon,
         })
     end
@@ -529,14 +659,14 @@ end
 -- Assigned to the local forward-declared above UpdatePlayerExperience (see
 -- that function's comment) so it can call this even though it is defined
 -- earlier in the file.
-BuildCategoriesPayload = function(rebirth_level, account_id)
+BuildCategoriesPayload = function(rebirth_level, account_id, locale)
     local claim_counts = Repository:GetClaimCounts(account_id)
 
     return {
-        { categoryId = Constant.CATEGORIES.PIERRE, entries = BuildPierreEntries(rebirth_level) },
-        { categoryId = Constant.CATEGORIES.PIERRE_PREUVE, entries = BuildProofEntries(rebirth_level) },
-        { categoryId = Constant.CATEGORIES.HERITAGE, entries = BuildHeritageEntries(rebirth_level) },
-        { categoryId = Constant.CATEGORIES.RECOMPENSES, entries = BuildRewardEntries(rebirth_level, claim_counts) },
+        { categoryId = Constant.CATEGORIES.PIERRE, entries = BuildPierreEntries(rebirth_level, locale) },
+        { categoryId = Constant.CATEGORIES.PIERRE_PREUVE, entries = BuildProofEntries(rebirth_level, locale) },
+        { categoryId = Constant.CATEGORIES.HERITAGE, entries = BuildHeritageEntries(rebirth_level, locale) },
+        { categoryId = Constant.CATEGORIES.RECOMPENSES, entries = BuildRewardEntries(rebirth_level, claim_counts, locale) },
     }
 end
 
@@ -572,7 +702,7 @@ function OnRebirthClientLoadRequest(player, _)
         defaults = { rebirth },
     })
 
-    local categories = BuildCategoriesPayload(rebirth:GetLevel(), account_id)
+    local categories = BuildCategoriesPayload(rebirth:GetLevel(), account_id, GetPlayerLocale(player))
 
     categories = Mediator.On("OnAfterClientLoadRequest", {
         arguments = { player, rebirth, categories },
@@ -609,7 +739,7 @@ local function TriggerPierreOption(player, level, account_id, option_id)
     local required_level = (option_entry and option_entry.level) or Constant.OPTIONS_TIER_1_LEVEL
 
     if level < required_level then
-        player:SendNotification("|CFF00A2FFCette option est verrouillée. Niveau de Rebirth " .. required_level .. " requis.|r")
+        Notify(player, "OPTION_LOCKED", required_level)
         return false
     end
 
@@ -738,28 +868,28 @@ local function TriggerPierreOption(player, level, account_id, option_id)
         end
 
         player:CastSpell(player, 31726, true)
-        player:SendNotification("|CFF00A2FFVous bénéficiez de toutes les améliorations d'état possible !|r")
+        Notify(player, "ALL_BUFFS")
 
     elseif option_id == O.SOIN then
         player:SetHealth(player:GetMaxHealth())
         player:SetPower(player:GetMaxPower())
         player:CastSpell(player, 31726, true)
-        player:SendNotification("|CFF00A2FFVous revoila en bonne santé !|r")
+        Notify(player, "HEAL")
 
     elseif option_id == O.RETRAIT_MAL_RESURRECTION then
         player:RemoveAura(15007)
         player:CastSpell(player, 31726, true)
-        player:SendNotification("|CFF00A2FFVous revoila prêt aux combats !|r")
+        Notify(player, "REMOVE_SICKNESS")
 
     elseif option_id == O.REPARATION then
         player:DurabilityRepairAll(false)
         player:CastSpell(player, 31726, true)
-        player:SendNotification("|CFF00A2FFVotre équipement est réparé !|r")
+        Notify(player, "REPAIR")
 
     elseif option_id == O.RESET_TALENTS then
         player:ResetTalents(true)
         player:CastSpell(player, 31726, true)
-        player:SendNotification("|CFF00A2FFVos talents ont été réinitialisés|r")
+        Notify(player, "RESET_TALENTS")
 
     elseif option_id == O.RESET_SORTS then
         local current_time = os.time()
@@ -767,24 +897,24 @@ local function TriggerPierreOption(player, level, account_id, option_id)
 
         if last_use and (current_time - last_use < RESET_SORTS_COOLDOWN) then
             local remaining = RESET_SORTS_COOLDOWN - (current_time - last_use)
-            player:SendNotification("|cff00f0f0Encore|r |cffffff00" .. remaining .. " secondes|r |cff00f0f0avant la réinitialisation des sorts.|r")
+            Notify(player, "SPELLS_COOLDOWN_WAIT", remaining)
             return false
         end
 
         _G.RebirthOptionCooldowns[account_id] = current_time
         player:ResetAllCooldowns()
         player:CastSpell(player, 31726, true)
-        player:SendNotification("|CFF00A2FFVos temps de recharge de vos sorts ont été réinitialisés|r")
+        Notify(player, "RESET_SPELLS")
 
     elseif option_id == O.RETRAIT_DESERTEUR then
         player:RemoveAura(26013)
         player:CastSpell(player, 31726, true)
-        player:SendNotification("|CFF00A2FFVous revoila prêt pour un nouveau champs de bataille !|r")
+        Notify(player, "REMOVE_DESERTER")
 
     elseif option_id == O.RESET_INSTANCES then
         player:UnbindAllInstances()
         player:CastSpell(player, 31726, true)
-        player:SendNotification("|CFF00A2FFVos instances ont été réinitalisées.|r")
+        Notify(player, "RESET_INSTANCES")
 
     else
         return false
@@ -810,12 +940,12 @@ local function TriggerProofTeleport(player, level, proof_id)
     end
 
     if level < entry.level then
-        player:SendNotification("|CFF00A2FFCette destination est verrouillée. Niveau de Rebirth " .. entry.level .. " requis.|r")
+        Notify(player, "TELEPORT_LOCKED", entry.level)
         return false
     end
 
     player:Teleport(entry.map, entry.x, entry.y, entry.z, entry.o)
-    player:SendNotification("Tuer Preuve du rebirth " .. proof_id .. " pour être récompenser !")
+    Notify(player, "TELEPORT_SUCCESS", proof_id)
 
     return true
 end
@@ -839,12 +969,12 @@ local function TriggerHeritageClaim(player, account_id, level, item_id)
     end
 
     if level < entry.level then
-        player:SendNotification("|CFF00A2FFCet objet Héritage est verrouillé. Niveau de Rebirth " .. entry.level .. " requis.|r")
+        Notify(player, "HERITAGE_LOCKED", entry.level)
         return false
     end
 
     player:AddItem(item_id, 1)
-    player:SendNotification("|CFF00A2FFObjet Héritage ajouté à votre inventaire !|r")
+    Notify(player, "HERITAGE_GRANTED")
 
     return true
 end
@@ -869,7 +999,7 @@ local function TriggerRewardClaim(player, account_id, level, item_id)
     end
 
     if level < entry.level then
-        player:SendNotification("|CFF00A2FFCette récompense est verrouillée. Niveau de Rebirth " .. entry.level .. " requis.|r")
+        Notify(player, "REWARD_LOCKED", entry.level)
         return false
     end
 
@@ -877,14 +1007,14 @@ local function TriggerRewardClaim(player, account_id, level, item_id)
     if max_claims > 0 then
         local count = Repository:GetClaimCount(account_id, item_id)
         if count >= max_claims then
-            player:SendNotification("|CFF00A2FFVous avez atteint la limite de réclamation pour cette récompense (" .. max_claims .. ").|r")
+            Notify(player, "REWARD_LIMIT", max_claims)
             return false
         end
     end
 
     player:AddItem(item_id, 1)
     Repository:IncrementClaimCount(account_id, item_id)
-    player:SendNotification("|CFF00A2FFRécompense ajoutée à votre inventaire !|r")
+    Notify(player, "REWARD_GRANTED")
 
     return true
 end
@@ -910,12 +1040,12 @@ function OnRebirthClientTriggerEntry(player, arg_table)
     end
 
     if player:GetMap():IsBattleground() or player:GetMap():IsArena() then
-        player:SendNotification("|CFF00A2FFVous ne pouvez pas utiliser votre Pierre de Rebirth depuis un champ de bataille ou une arène.|r")
+        Notify(player, "NOT_IN_BG_ARENA")
         return false
     end
 
     if player:IsInCombat() then
-        player:SendNotification("|CFF00A2FFRetentez une fois votre combat fini!|r")
+        Notify(player, "NOT_IN_COMBAT")
         return false
     end
 
@@ -960,7 +1090,7 @@ function OnRebirthClientTriggerEntry(player, arg_table)
     -- clicked row immediately shows "already claimed" instead of staying on
     -- the stale "click to claim" state.
     if applied and (category_id == C.HERITAGE or category_id == C.RECOMPENSES) then
-        local categories = BuildCategoriesPayload(level, account_id)
+        local categories = BuildCategoriesPayload(level, account_id, GetPlayerLocale(player))
         player:SendServerResponse(Hook.Addon.Prefix, 3, categories)
     end
 

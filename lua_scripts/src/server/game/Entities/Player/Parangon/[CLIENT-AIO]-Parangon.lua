@@ -10,6 +10,67 @@ end
 local parangon = {}
 local parangon_addon = AIO.AddHandlers("AIO_Parangon", {})
 
+-- ============================================================
+--  LOCALE frFR / enUS
+-- ============================================================
+local UI_LOCALE = (GetLocale and GetLocale() == "enUS") and "enUS" or "frFR"
+
+local ParangonLocales = {
+    frFR = {
+        ACCEPT = "Accepter",
+        TOOLTIP_TITLE = "Statistiques Parangon",
+        TOOLTIP_TOGGLE = "Affiche/masque la fenêtre d'attribution des points de Parangon.\n",
+        TOOLTIP_ADJUST = "Clic droit ou gauche/molette ajuste les points de Parangon\n",
+        POINTS_LEFT = "Vous avez |CFFD70000%d|r point(s) à dépenser.",
+        STAT_NAMES = {
+            [7464] = "Force",
+            [7471] = "Agilité",
+            [7477] = "Endurance",
+            [7468] = "Intelligence",
+            [7597] = "Coup Critique",
+            [37728] = "Hâte",
+            [55565] = "Puissance des sorts",
+            [9136] = "Puissance d'attaque",
+            [1502002] = "Esquive",
+            [7511] = "Defense",
+            [13665] = "Parade",
+            [27949] = "Régén vie/mana",
+            [18672] = "Résistance",
+            [9760] = "Armure",
+            [46412] = "Résilience",
+            [15464] = "Score de toucher",
+        },
+    },
+    enUS = {
+        ACCEPT = "Accept",
+        TOOLTIP_TITLE = "Parangon Stats",
+        TOOLTIP_TOGGLE = "Shows/hides the Parangon point allocation window.\n",
+        TOOLTIP_ADJUST = "Right or left click/mouse wheel adjusts Parangon points\n",
+        POINTS_LEFT = "You have |CFFD70000%d|r point(s) to spend.",
+        STAT_NAMES = {
+            [7464] = "Strength",
+            [7471] = "Agility",
+            [7477] = "Stamina",
+            [7468] = "Intellect",
+            [7597] = "Critical Strike",
+            [37728] = "Haste",
+            [55565] = "Spell Power",
+            [9136] = "Attack Power",
+            [1502002] = "Dodge",
+            [7511] = "Defense",
+            [13665] = "Parry",
+            [27949] = "Health/Mana Regen",
+            [18672] = "Resistance",
+            [9760] = "Armor",
+            [46412] = "Resilience",
+            [15464] = "Hit Rating",
+        },
+    },
+}
+
+local ParangonL = ParangonLocales[UI_LOCALE] or ParangonLocales.frFR
+
+
 parangon.mainWindow = CreateFrame("Frame", "ParangonMainWindow", UIParent)
   parangon.mainWindow:SetSize(300, 500)
   parangon.mainWindow:SetMovable(false)
@@ -137,22 +198,22 @@ parangon.rightButtonsTexture = {}
 parangon.rightText = {}
 
 parangon.spellsList = {
-  [7464] = {name = 'Force', icon = '_D3mantraofconviction'},
-  [7471] = {name = 'Agilité', icon = '_D3mantraofevasion'},
-  [7477] = {name = 'Endurance', icon = '_D3mantraofretribution'},
-  [7468] = {name = 'Intelligence', icon = '_D3mantraofhealing'},
-  [7597] = {name = 'Coup Critique', icon = 'inv_inscription_modified_craftingreagent01'},
-  [37728] = {name = 'Hâte', icon = 'inv_inscription_modified_craftingreagent03'},
-  [55565] = {name = 'Puissance des sorts', icon = 'spell_holy_greaterheal'},
-  [9136] = {name = 'Puissance d\'attaque', icon = 'spell_holy_excorcism'},
-  [1502002] = {name = 'Esquive', icon = 'spell_nature_invisibilty'},
-  [7511] = {name = 'Defense', icon = 'ability_warrior_defensivestance'},
-  [13665] = {name = 'Parade', icon = 'ability_parry'},
-  [27949] = {name = 'Régén vie/mana', icon = 'spell_nature_regenerate'},
-  [18672] = {name = 'Résistance', icon = 'spell_holy_devotion'},
-  [9760] = {name = 'Armure', icon = 'inv_chest_plate01'},
-  [46412] = {name = 'Résilience', icon = 'spell_arcane_arcaneresilience'},
-  [15464] = {name = 'Score de toucher', icon = 'inv_offhand_stratholme_a_02'},
+  [7464] = {name = ParangonL.STAT_NAMES[7464], icon = '_D3mantraofconviction'},
+  [7471] = {name = ParangonL.STAT_NAMES[7471], icon = '_D3mantraofevasion'},
+  [7477] = {name = ParangonL.STAT_NAMES[7477], icon = '_D3mantraofretribution'},
+  [7468] = {name = ParangonL.STAT_NAMES[7468], icon = '_D3mantraofhealing'},
+  [7597] = {name = ParangonL.STAT_NAMES[7597], icon = 'inv_inscription_modified_craftingreagent01'},
+  [37728] = {name = ParangonL.STAT_NAMES[37728], icon = 'inv_inscription_modified_craftingreagent03'},
+  [55565] = {name = ParangonL.STAT_NAMES[55565], icon = 'spell_holy_greaterheal'},
+  [9136] = {name = ParangonL.STAT_NAMES[9136], icon = 'spell_holy_excorcism'},
+  [1502002] = {name = ParangonL.STAT_NAMES[1502002], icon = 'spell_nature_invisibilty'},
+  [7511] = {name = ParangonL.STAT_NAMES[7511], icon = 'ability_warrior_defensivestance'},
+  [13665] = {name = ParangonL.STAT_NAMES[13665], icon = 'ability_parry'},
+  [27949] = {name = ParangonL.STAT_NAMES[27949], icon = 'spell_nature_regenerate'},
+  [18672] = {name = ParangonL.STAT_NAMES[18672], icon = 'spell_holy_devotion'},
+  [9760] = {name = ParangonL.STAT_NAMES[9760], icon = 'inv_chest_plate01'},
+  [46412] = {name = ParangonL.STAT_NAMES[46412], icon = 'spell_arcane_arcaneresilience'},
+  [15464] = {name = ParangonL.STAT_NAMES[15464], icon = 'inv_offhand_stratholme_a_02'},
 }
 
 for id, subtable in pairs(parangon.spellsList) do
@@ -1152,7 +1213,7 @@ parangon.saveButtonText = parangon.saveButton:CreateFontString(parangon.saveButt
   parangon.saveButtonText:SetFont("Fonts/FRIZQT__.TTF", 12)
   parangon.saveButtonText:SetSize(180, 3)
   parangon.saveButtonText:SetPoint("CENTER", 0, 6)
-  parangon.saveButtonText:SetText("|CFFFFFFFFAccepter|r")
+  parangon.saveButtonText:SetText("|CFFFFFFFF"..ParangonL.ACCEPT.."|r")
   parangon.saveButtonText:SetShadowColor(0, 0, 0)
   parangon.saveButtonText:SetShadowOffset(0.5, 0.5)
 
@@ -1186,10 +1247,10 @@ parangon.characterFrameBorder = CreateFrame("Button", parangon.characterFrameBor
 
   parangon.characterFrameBorder:SetScript("OnEnter", function(self, button, down)
     GameTooltip:SetOwner(UIParent, "ANCHOR_CURSOR", 1, 5)
-    GameTooltip:AddLine("Statistiques Parangon", 1, 1, 1)
+    GameTooltip:AddLine(ParangonL.TOOLTIP_TITLE, 1, 1, 1)
     GameTooltip:AddLine(""..parangon.pointsLeft:GetText().."\n")
-	GameTooltip:AddLine("Affiche/masque la fenêtre d'attribution des points de Parangon.\n")
-	GameTooltip:AddLine("Clic droit ou gauche/molette ajuste les points de Parangon\n")
+	GameTooltip:AddLine(ParangonL.TOOLTIP_TOGGLE)
+	GameTooltip:AddLine(ParangonL.TOOLTIP_ADJUST)
 
     for spellid, subtable in pairs(parangon.spellsList) do
       GameTooltip:AddLine("|CFFFFFFFF+ "..parangon.rightText[spellid]:GetText().."|CFFFFFFFF "..subtable.name.."|r");
@@ -1226,7 +1287,7 @@ function parangon_addon.setInfo(player, stats, level, points, exps)
   end
 
   parangon.levelText:SetText("|CFFFFFFFF" .. level)
-  parangon.pointsLeft:SetText("Vous avez |CFFD70000" .. points .. "|r point(s) à dépenser.")
+  parangon.pointsLeft:SetText(string.format(ParangonL.POINTS_LEFT, points))
 
   parangon.expText:SetText("|CFFFFFFFF(".. exps.exp .. " / " .. exps.exp_max .. ")")
 end

@@ -11,7 +11,9 @@ local KEYS = {
 		name			= 2,
 		icon			= 3,
 		data			= 4,
-		tooltip			= 5
+		tooltip			= 5,
+		nameEn			= 6,
+		tooltipEn		= 7
 	},
 	category = {
 		id				= 1,
@@ -19,7 +21,8 @@ local KEYS = {
 		icon			= 3,
 		requiredRank	= 4,
 		flags			= 5,
-		enabled			= 6
+		enabled			= 6,
+		nameEn			= 7
 	},
 	service = {
 		id				= 0,
@@ -52,7 +55,10 @@ local KEYS = {
 		rewardCount_7	= 27,
 		rewardCount_8	= 28,
 		new				= 29,
-		enabled			= 30
+		enabled			= 30,
+		nameEn			= 30,
+		tooltipNameEn	= 31,
+		tooltipTextEn	= 32
 	},
 }
 
@@ -63,10 +69,11 @@ end
 function NavData.Load()
 	NavData.Cache = {};
 	
+	-- Column order: id(0), name(1), icon(2), requiredRank(3), flags(4), enabled(5), name_en(6)
 	local Query = WorldDBQuery("SELECT * FROM auc_world.store_categories")
 	if(Query) then 
 		repeat
-			table.insert(NavData.Cache, {Query:GetUInt32(KEYS.category.id-1), Query:GetString(KEYS.category.name-1), Query:GetString(KEYS.category.icon-1), Query:GetUInt32(KEYS.category.requiredRank-1), Query:GetUInt32(KEYS.category.flags-1), Query:GetUInt32(KEYS.category.enabled-1)}) 
+			table.insert(NavData.Cache, {Query:GetUInt32(KEYS.category.id-1), Query:GetString(KEYS.category.name-1), Query:GetString(KEYS.category.icon-1), Query:GetUInt32(KEYS.category.requiredRank-1), Query:GetUInt32(KEYS.category.flags-1), Query:GetUInt32(KEYS.category.enabled-1), Query:GetString(6)}) 
 		until not Query:NextRow()
 	end
 end
@@ -74,6 +81,7 @@ end
 function CurrencyData.Load()
 	CurrencyData.Cache = {};
 	
+	-- Column order: id(0), type(1), name(2), icon(3), data(4), tooltip(5), name_en(6), tooltip_en(7)
 	local Query = WorldDBQuery("SELECT * FROM auc_world.store_currencies")
 	if(Query) then 
 		repeat
@@ -83,6 +91,8 @@ function CurrencyData.Load()
 				Query:GetString(3), -- icon
 				Query:GetUInt32(4), -- data
 				Query:GetString(5), -- tooltip
+				Query:GetString(6), -- name_en
+				Query:GetString(7), -- tooltip_en
 			}
 		until not Query:NextRow()
 	end
@@ -91,6 +101,7 @@ end
 function ServiceData.Load()
 	ServiceData.Cache = {};
 	
+	-- Trailing columns added after `enabled`(30): name_en(31), tooltipName_en(32), tooltipText_en(33)
 	local Query = WorldDBQuery("SELECT * FROM auc_world.store_services;");
 	if(Query) then
 		repeat
@@ -125,6 +136,9 @@ function ServiceData.Load()
 					Query:GetUInt32(KEYS.service.rewardCount_7),
 					Query:GetUInt32(KEYS.service.rewardCount_8),
 					Query:GetUInt32(KEYS.service.new),
+					Query:GetString(31), -- name_en
+					Query:GetString(32), -- tooltipName_en
+					Query:GetString(33), -- tooltipText_en
 				}
 			end
 		until not Query:NextRow()
@@ -202,6 +216,92 @@ end
 
 function GetCurrencyData()
 	return CurrencyData.Cache;
+end
+
+-- ==========================================================================
+-- Bilingual frFR/enUS support
+-- Reads the player's account.locale (TrinityCore LocaleConstant: 0 = enUS,
+-- everything else including a lookup failure falls back to frFR) and returns
+-- localized COPIES of the shared caches above, with the name/tooltip fields
+-- swapped to the requested language. The array shape sent to the client is
+-- left completely untouched (same keys/positions as before) so Store_Client.lua
+-- does not need any changes to read this data.
+-- ==========================================================================
+
+function GetPlayerLocale(player)
+	local ok, result = pcall(function()
+		local accountId = player:GetAccountId()
+		local q = AuthDBQuery("SELECT locale FROM account WHERE id = "..accountId..";")
+		if q then
+			local loc = q:GetUInt8(0)
+			-- TrinityCore LocaleConstant: 0 = enUS
+			if loc == 0 then
+				return "enUS"
+			end
+		end
+		return "frFR"
+	end)
+	if ok and result then
+		return result
+	end
+	return "frFR"
+end
+
+function BuildLocalizedNavData(locale)
+	if locale ~= "enUS" then
+		return NavData.Cache
+	end
+	local out = {}
+	for _, row in ipairs(NavData.Cache) do
+		local copy = {row[1], row[2], row[3], row[4], row[5], row[6]}
+		if row[KEYS.category.nameEn] and row[KEYS.category.nameEn] ~= "" then
+			copy[KEYS.category.name] = row[KEYS.category.nameEn]
+		end
+		table.insert(out, copy)
+	end
+	return out
+end
+
+function BuildLocalizedCurrencyData(locale)
+	if locale ~= "enUS" then
+		return CurrencyData.Cache
+	end
+	local out = {}
+	for id, row in pairs(CurrencyData.Cache) do
+		local copy = {row[1], row[2], row[3], row[4], row[5]}
+		if row[KEYS.currency.nameEn] and row[KEYS.currency.nameEn] ~= "" then
+			copy[KEYS.currency.name] = row[KEYS.currency.nameEn]
+		end
+		if row[KEYS.currency.tooltipEn] and row[KEYS.currency.tooltipEn] ~= "" then
+			copy[KEYS.currency.tooltip] = row[KEYS.currency.tooltipEn]
+		end
+		out[id] = copy
+	end
+	return out
+end
+
+function BuildLocalizedServiceData(locale)
+	if locale ~= "enUS" then
+		return ServiceData.Cache
+	end
+	local out = {}
+	for id, row in pairs(ServiceData.Cache) do
+		local copy = {}
+		for i = 1, KEYS.service.new do
+			copy[i] = row[i]
+		end
+		if row[KEYS.service.nameEn] and row[KEYS.service.nameEn] ~= "" then
+			copy[KEYS.service.name] = row[KEYS.service.nameEn]
+		end
+		if row[KEYS.service.tooltipNameEn] and row[KEYS.service.tooltipNameEn] ~= "" then
+			copy[KEYS.service.tooltipName] = row[KEYS.service.tooltipNameEn]
+		end
+		if row[KEYS.service.tooltipTextEn] and row[KEYS.service.tooltipTextEn] ~= "" then
+			copy[KEYS.service.tooltipText] = row[KEYS.service.tooltipTextEn]
+		end
+		out[id] = copy
+	end
+	return out
 end
 
 ServiceData.Load()

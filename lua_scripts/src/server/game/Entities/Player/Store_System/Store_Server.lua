@@ -5,17 +5,48 @@
 local CONFIG = {
 	maxLevel = 80, -- Character max level of server
 	mailSenderGUID = 1, -- GUID of the character shown as sender of purchase mails
-	strings = {
-		-- Currency name is appended to the end of this string
-		insufficientFunds = "Vous n'avez pas assez de",
-		-- Type is appended, ie. title, mount, pet etc.
-		alreadyKnown = "Vous avez déjà cet",
-		tooHighLevel = "Votre niveau est trop élevé",
-		mailBody = "Merci pour votre achat !",
-		-- The service name is prefixed to this message
-		successfulPurchase = "Achat confirmé !"
-	}
 }
+
+-- Bilingual frFR/enUS player-facing messages. Locale is resolved per-player via
+-- GetPlayerLocale(player) (defined in Store_DataStruct.lua, reads account.locale),
+-- with an automatic fallback to frFR if the DB lookup fails or the language isn't handled.
+local StoreNotif = {
+	frFR = {
+		INSUFFICIENT_FUNDS = "Vous n'avez pas assez de %s|r",
+		ALREADY_KNOWN_MOUNT = "Vous avez déjà cette monture",
+		ALREADY_KNOWN_PET = "Vous avez déjà cette mascotte",
+		ALREADY_KNOWN_TITLE = "Vous avez déjà ce titre",
+		TOO_HIGH_LEVEL = "Votre niveau est trop élevé",
+		MAIL_SUBJECT = "Achat de : %s",
+		MAIL_BODY = "Merci pour votre achat !",
+		PURCHASE_CONFIRMED = "%s Achat confirmé !",
+	},
+	enUS = {
+		INSUFFICIENT_FUNDS = "You do not have enough %s|r",
+		ALREADY_KNOWN_MOUNT = "You already know this mount",
+		ALREADY_KNOWN_PET = "You already know this pet",
+		ALREADY_KNOWN_TITLE = "You already have this title",
+		TOO_HIGH_LEVEL = "Your level is too high",
+		MAIL_SUBJECT = "Purchase of: %s",
+		MAIL_BODY = "Thank you for your purchase!",
+		PURCHASE_CONFIRMED = "%s Purchase confirmed!",
+	},
+}
+
+local function L(player)
+	return StoreNotif[GetPlayerLocale(player)] or StoreNotif.frFR
+end
+
+-- Picks the name/tooltip field in the right language from a cache row (service or
+-- currency) that still carries the extra trailing _en fields (i.e. the RAW cache,
+-- not a BuildLocalized*Data() copy). Falls back to the frFR value if no enUS text
+-- was provided for that row.
+local function LocalizedField(player, row, frIndex, enIndex)
+	if GetPlayerLocale(player) == "enUS" and row[enIndex] and row[enIndex] ~= "" then
+		return row[enIndex]
+	end
+	return row[frIndex]
+end
 
 --------------------
 
@@ -46,7 +77,8 @@ local KEYS = GetDataStructKeys();
 local StoreHandler = AIO.AddHandlers("STORE_SERVER", {})
 
 function StoreHandler.FrameData(player)
-	AIO.Handle(player, "STORE_CLIENT", "FrameData", GetServiceData(), GetLinkData(), GetNavData(), GetCurrencyData(), player:GetGMRank())
+	local locale = GetPlayerLocale(player)
+	AIO.Handle(player, "STORE_CLIENT", "FrameData", BuildLocalizedServiceData(locale), GetLinkData(), BuildLocalizedNavData(locale), BuildLocalizedCurrencyData(locale), player:GetGMRank())
 end
 
 function StoreHandler.UpdateCurrencies(player)
@@ -99,7 +131,7 @@ function StoreHandler.Purchase(player, serviceId)
 				player:PlayDirectSound(120, player)
 				
 				-- Send success toast
-				player:SendAreaTriggerMessage(services[serviceId][KEYS.service.name] .. " "..CONFIG.strings.successfulPurchase)
+				player:SendAreaTriggerMessage(string.format(L(player).PURCHASE_CONFIRMED, LocalizedField(player, services[serviceId], KEYS.service.name, KEYS.service.nameEn)))
 			end
 		end
 	end
@@ -109,13 +141,13 @@ end
 function SHOP_UI.DeductCurrency(player, currencyId, amount)
 	local currency = GetCurrencyData()
 	local currencyType = currency[currencyId][KEYS.currency.currencyType]
-	local currencyName = currency[currencyId][KEYS.currency.name]
+	local currencyName = LocalizedField(player, currency[currencyId], KEYS.currency.name, KEYS.currency.nameEn)
 	local currencyData = currency[currencyId][KEYS.currency.data]
 	
 	-- Gold handling
 	if(CURRENCY_TYPES[currencyType] == "GOLD") then
 		if(player:GetCoinage() < amount * 10000) then
-			player:SendAreaTriggerMessage("|cFFFF0000"..CONFIG.strings.insufficientFunds.." "..currencyName.."|r")
+			player:SendAreaTriggerMessage("|cFFFF0000"..string.format(L(player).INSUFFICIENT_FUNDS, currencyName))
 			player:PlayDirectSound(GetSoundEffect("notEnoughMoney", player:GetRace(), player:GetGender()), player)
 			return false
 		end
@@ -126,7 +158,7 @@ function SHOP_UI.DeductCurrency(player, currencyId, amount)
 	-- Token handling
 	if(CURRENCY_TYPES[currencyType] == "ITEM_TOKEN") then
 		if not(player:HasItem(currencyData, amount)) then
-			player:SendAreaTriggerMessage("|cFFFF0000"..CONFIG.strings.insufficientFunds.." "..currencyName.."|r")
+			player:SendAreaTriggerMessage("|cFFFF0000"..string.format(L(player).INSUFFICIENT_FUNDS, currencyName))
 			player:PlayDirectSound(GetSoundEffect("notEnoughMoney", player:GetRace(), player:GetGender()), player)
 			return false
 		end
@@ -169,7 +201,7 @@ function SHOP_UI.ItemHandler(player, data)
 	end
 	
 	-- Send reward mail
-	SendMail("Purchase of: "..data[KEYS.service.name], CONFIG.strings.mailBody, player:GetGUIDLow(), CONFIG.mailSenderGUID, 62, 0, 0, 0, unpack(items))
+	SendMail(string.format(L(player).MAIL_SUBJECT, LocalizedField(player, data, KEYS.service.name, KEYS.service.nameEn)), L(player).MAIL_BODY, player:GetGUIDLow(), CONFIG.mailSenderGUID, 62, 0, 0, 0, unpack(items))
 	return true
 end
 
@@ -206,7 +238,7 @@ function SHOP_UI.MountHandler(player, data)
 	
 	-- check if player already has the spells learned
 	if(knownCount == rewardCount) then
-		player:SendAreaTriggerMessage("|cFFFF0000"..CONFIG.strings.alreadyKnown.." monture|r")
+		player:SendAreaTriggerMessage("|cFFFF0000"..L(player).ALREADY_KNOWN_MOUNT.."|r")
 		player:PlayDirectSound(GetSoundEffect("cantLearn", player:GetRace(), player:GetGender()), player)
 		return false
 	end
@@ -244,7 +276,7 @@ function SHOP_UI.PetHandler(player, data)
 	
 	-- check if player already has the spells learned
 	if(knownCount == rewardCount) then
-		player:SendAreaTriggerMessage("|cFFFF0000"..CONFIG.strings.alreadyKnown.." mascotte|r")
+		player:SendAreaTriggerMessage("|cFFFF0000"..L(player).ALREADY_KNOWN_PET.."|r")
 		player:PlayDirectSound(GetSoundEffect("cantLearn", player:GetRace(), player:GetGender()), player)
 		return false
 	end
@@ -312,7 +344,7 @@ function SHOP_UI.LevelHandler(player, data)
 	-- We need to check this before deducting any money
 	if(data[KEYS.service.flags] == 1) then
 		if(player:GetLevel() >= data[KEYS.service.reward_1]) then
-			player:SendAreaTriggerMessage("|cFFFF0000"..CONFIG.strings.tooHighLevel.."|r")
+			player:SendAreaTriggerMessage("|cFFFF0000"..L(player).TOO_HIGH_LEVEL.."|r")
 			player:PlayDirectSound(GetSoundEffect("cantUse", player:GetRace(), player:GetGender()), player)
 			return false
 		end
@@ -348,7 +380,7 @@ function SHOP_UI.TitleHandler(player, data)
 	
 	-- Check whether or not the player already has the specified title
 	if(player:HasTitle(data[KEYS.service.reward_1])) then
-		player:SendAreaTriggerMessage("|cFFFF0000"..CONFIG.strings.alreadyKnown.." title|r")
+		player:SendAreaTriggerMessage("|cFFFF0000"..L(player).ALREADY_KNOWN_TITLE.."|r")
 		player:PlayDirectSound(GetSoundEffect("cantLearn", player:GetRace(), player:GetGender()), player)
 		return false
 	end

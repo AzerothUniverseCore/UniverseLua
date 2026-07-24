@@ -16,6 +16,80 @@ local AIO = AIO or require("AIO")
 if AIO.AddAddon() then return end
 
 -- ─────────────────────────────────────────────────────────────
+-- LOCALE (bilingue frFR / enUS, repli sur frFR)
+-- ─────────────────────────────────────────────────────────────
+local UI_LOCALE = (GetLocale and GetLocale() == "enUS") and "enUS" or "frFR"
+local ML = {
+    frFR = {
+        SLOT_HINT               = "Déposez votre Clé mythique",
+        NOT_KEYSTONE            = "|cFFFF4444[Mythic+]|r Ce n'est pas une Clé mythique.",
+        LEVEL_PREFIX            = "Niveau ",
+        MINUTES_SUFFIX          = " Minutes",
+        BTN_ACTIVATE            = "Activer",
+        BTN_CHANGE_DUNGEON      = "Changer donjon",
+        SELECT_DUNGEON_TITLE    = "|cFF00CCFFChoisissez un donjon|r",
+        BTN_CONFIRM             = "Confirmer",
+        LEVEL_SHORT             = "Niv.",
+        MIN_SHORT               = "min",
+        ERR_SELECT_DUNGEON      = "|cFFFF4444[Mythic+]|r Sélectionnez un donjon.",
+        ERR_SLOT_KEYSTONE       = "|cFFFF4444[Mythic+]|r Déposez votre Clé mythique dans le slot.",
+        MSG_KEYSTONE_OBTAINED   = "|cFF00CCFF[Mythic+]|r Clé mythique obtenu : |cFFFFD700%s|r  Niveau %s",
+        MSG_KEYSTONE_UPGRADED   = "|cFF00CCFF[Mythic+]|r Clé mythique > Niveau |cFFFFD700%s|r",
+        MSG_RUN_STARTS_IN       = "|cFF00CCFF[Mythic+]|r Le run commence dans %s secondes !",
+        MSG_RUN_STARTED         = "|cFF00FF00[Mythic+]|r C'est parti ! Timer démarré.",
+        MSG_TIMER_EXPIRED       = "|cFFFF3333[Mythic+] Timer expiré – run déplété.|r",
+        MSG_BOSS_KILLED         = "|cFF00FF00[Mythic+] Boss tué ! (%d/%d)|r",
+        MSG_RUN_COMPLETE_INTIME = "|cFFFFD700Run terminé dans le timer ! +%d niv (%d)|r",
+        MSG_RUN_COMPLETE_DEPLETED = "|cFFFF8800Run terminé (déplété). Clé mythique perdu.|r",
+        MSG_RUN_COMPLETE_PREFIX = "|cFF00CCFF[Mythic+]|r ",
+        MSG_NO_ACTIVE_RUN       = "|cFFAAAAAA[Mythic+] Aucun run actif dans cette instance.|r",
+        MSG_NO_KEYSTONE         = "|cFFFF4444[Mythic+] Vous n'avez pas de Clé mythique actif.|r",
+        MSG_ERROR_PREFIX        = "|cFFFF4444[Mythic+] Erreur :|r ",
+        BOSSES_LABEL            = "Bosses : %d / %d",
+        DEPLETED_WARNING        = "|cFFFF3333⚠ DÉPLÉTÉ|r",
+        COUNTDOWN_LABEL         = "Mythic+ commence dans…",
+        POPUP_OK                = "OK",
+        DEFAULT_TIMER_LABEL     = "Timer",
+        RAID_FINISHED_SUFFIX    = " : Terminé !",
+        CHAT_FINISHED_SUFFIX    = " terminé !",
+    },
+    enUS = {
+        SLOT_HINT               = "Drop your Mythic Keystone",
+        NOT_KEYSTONE            = "|cFFFF4444[Mythic+]|r This is not a Mythic Keystone.",
+        LEVEL_PREFIX            = "Level ",
+        MINUTES_SUFFIX          = " Minutes",
+        BTN_ACTIVATE            = "Activate",
+        BTN_CHANGE_DUNGEON      = "Change Dungeon",
+        SELECT_DUNGEON_TITLE    = "|cFF00CCFFChoose a dungeon|r",
+        BTN_CONFIRM             = "Confirm",
+        LEVEL_SHORT             = "Lvl.",
+        MIN_SHORT               = "min",
+        ERR_SELECT_DUNGEON      = "|cFFFF4444[Mythic+]|r Select a dungeon.",
+        ERR_SLOT_KEYSTONE       = "|cFFFF4444[Mythic+]|r Drop your Mythic Keystone into the slot.",
+        MSG_KEYSTONE_OBTAINED   = "|cFF00CCFF[Mythic+]|r Mythic Keystone obtained: |cFFFFD700%s|r  Level %s",
+        MSG_KEYSTONE_UPGRADED   = "|cFF00CCFF[Mythic+]|r Mythic Keystone -> Level |cFFFFD700%s|r",
+        MSG_RUN_STARTS_IN       = "|cFF00CCFF[Mythic+]|r The run starts in %s seconds!",
+        MSG_RUN_STARTED         = "|cFF00FF00[Mythic+]|r Let's go! Timer started.",
+        MSG_TIMER_EXPIRED       = "|cFFFF3333[Mythic+] Timer expired – run depleted.|r",
+        MSG_BOSS_KILLED         = "|cFF00FF00[Mythic+] Boss killed! (%d/%d)|r",
+        MSG_RUN_COMPLETE_INTIME = "|cFFFFD700Run completed in time! +%d lvl (%d)|r",
+        MSG_RUN_COMPLETE_DEPLETED = "|cFFFF8800Run completed (depleted). Mythic Keystone lost.|r",
+        MSG_RUN_COMPLETE_PREFIX = "|cFF00CCFF[Mythic+]|r ",
+        MSG_NO_ACTIVE_RUN       = "|cFFAAAAAA[Mythic+] No active run in this instance.|r",
+        MSG_NO_KEYSTONE         = "|cFFFF4444[Mythic+] You don't have an active Mythic Keystone.|r",
+        MSG_ERROR_PREFIX        = "|cFFFF4444[Mythic+] Error:|r ",
+        BOSSES_LABEL            = "Bosses: %d / %d",
+        DEPLETED_WARNING        = "|cFFFF3333⚠ DEPLETED|r",
+        COUNTDOWN_LABEL         = "Mythic+ starts in…",
+        POPUP_OK                = "OK",
+        DEFAULT_TIMER_LABEL     = "Timer",
+        RAID_FINISHED_SUFFIX    = " : Finished!",
+        CHAT_FINISHED_SUFFIX    = " finished!",
+    },
+}
+local L = ML[UI_LOCALE] or ML.frFR
+
+-- ─────────────────────────────────────────────────────────────
 -- TEXTURES MK
 -- ─────────────────────────────────────────────────────────────
 local TEX        = "Interface\\Challenges\\MythicKeystoneUI"
@@ -91,7 +165,7 @@ local ST = {
     active       = false,
     duration     = 9,
     elapsed      = 0,
-    label        = "Timer",
+    label        = L.DEFAULT_TIMER_LABEL,
     finished     = false,
     mkControlled = false,  -- true = fermeture silencieuse
 }
@@ -193,7 +267,7 @@ local function ST_StartCountdown(duration, label, mkControlled)
     ST.active       = false
     ST.duration     = duration or 9
     ST.elapsed      = 0
-    ST.label        = label or "Timer"
+    ST.label        = label or L.DEFAULT_TIMER_LABEL
     ST.finished     = false
     ST.mkControlled = mkControlled or false
 
@@ -246,11 +320,11 @@ stUpdateF:SetScript("OnUpdate", function(self, dt)
             PlaySound(569)
             RaidNotice_AddMessage(
                 RaidWarningFrame,
-                "|cffff4444" .. ST.label .. " : Terminé !|r",
+                "|cffff4444" .. ST.label .. L.RAID_FINISHED_SUFFIX .. "|r",
                 ChatTypeInfo["RAID_WARNING"]
             )
             DEFAULT_CHAT_FRAME:AddMessage(
-                "|cffff4444[SystemTimer]|r " .. ST.label .. " terminé !")
+                "|cffff4444[SystemTimer]|r " .. ST.label .. L.CHAT_FINISHED_SUFFIX)
             local closeDelay = 0
             local closeF = CreateFrame("Frame")
             closeF:SetScript("OnUpdate", function(self2, dt2)
@@ -299,7 +373,7 @@ local function UpdateLiveDisplay()
         r, g, b = C.GREEN[1], C.GREEN[2], C.GREEN[3]
     end
 
-    local txt = depleted and "|cFFFF3333⚠ DÉPLÉTÉ|r" or FmtTime(remaining)
+    local txt = depleted and L.DEPLETED_WARNING or FmtTime(remaining)
     f.txtLive:SetTextColor(r, g, b)
     f.txtLive:SetText(txt)
 
@@ -468,7 +542,7 @@ local function BuildFrame()
         itemID = tonumber(itemID)
         if not itemID then ClearCursor(); return end
         if itemID ~= MK.KEYSTONE_ID then
-            print("|cFFFF4444[Mythic+]|r Ce n'est pas une Clé mythique.")
+            print(L.NOT_KEYSTONE)
             ClearCursor(); return
         end
         local icon = GetItemIcon(itemID)
@@ -490,7 +564,7 @@ local function BuildFrame()
             GameTooltip:Show()
         else
             GameTooltip:SetOwner(self, "ANCHOR_TOP")
-            GameTooltip:AddLine("Déposez votre Clé mythique", C.CYAN[1], C.CYAN[2], C.CYAN[3])
+            GameTooltip:AddLine(L.SLOT_HINT, C.CYAN[1], C.CYAN[2], C.CYAN[3])
             GameTooltip:Show()
         end
     end)
@@ -626,17 +700,17 @@ local function BuildFrame()
     local btnActivate = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
     btnActivate:SetSize(160, 28)
     btnActivate:SetPoint("BOTTOM", f, "BOTTOM", -90, 20)
-    btnActivate:SetText("Activer")
+    btnActivate:SetText(L.BTN_ACTIVATE)
     btnActivate:SetScript("OnClick", function()
         if MK.mode == "select" then
             if not MK.selectedDungeon then
-                print("|cFFFF4444[Mythic+]|r Sélectionnez un donjon.")
+                print(L.ERR_SELECT_DUNGEON)
                 return
             end
             AIO.Handle("MKServer", "GiveKeystone", MK.selectedDungeon)
         else
             if not MK.slottedItemID then
-                print("|cFFFF4444[Mythic+]|r Déposez votre Clé mythique dans le slot.")
+                print(L.ERR_SLOT_KEYSTONE)
                 return
             end
             -- Envoie la demande au serveur ; la frame sera cachée
@@ -650,7 +724,7 @@ local function BuildFrame()
     local btnChangeDungeon = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
     btnChangeDungeon:SetSize(130, 28)
     btnChangeDungeon:SetPoint("BOTTOM", f, "BOTTOM", 80, 20)
-    btnChangeDungeon:SetText("Changer donjon")
+    btnChangeDungeon:SetText(L.BTN_CHANGE_DUNGEON)
     btnChangeDungeon:SetScript("OnClick", function()
         AIO.Handle("MKServer", "ChangeDungeon")
     end)
@@ -671,11 +745,11 @@ local function ShowViewMode(data)
     MK.data = data
     MK.mode = "view"
 
-    f.txtLevel:SetText("Niveau |cFFFFD700" .. (data.level or "--") .. "|r")
+    f.txtLevel:SetText(L.LEVEL_PREFIX .. "|cFFFFD700" .. (data.level or "--") .. "|r")
     f.txtDungeon:SetText(data.dungeon or "--")
     local mins    = math.floor((data.timer or 0) / 60)
     local multStr = data.mult and string.format("  |cFFFF8800×%.2f|r", data.mult) or ""
-    f.txtTimer:SetText(mins .. " Minutes" .. multStr)
+    f.txtTimer:SetText(mins .. L.MINUTES_SUFFIX .. multStr)
     f.txtLive:SetText("")
     f.txtBosses:SetText("")
 
@@ -706,7 +780,7 @@ local function ShowViewMode(data)
         -- Pas de run : mode normal avec slot et boutons
         f.btnActivate:ClearAllPoints()
         f.btnActivate:SetPoint("BOTTOM", f, "BOTTOM", -90, 20)
-        f.btnActivate:SetText("Activer")
+        f.btnActivate:SetText(L.BTN_ACTIVATE)
         f.btnActivate:Show()
         f.btnChangeDungeon:Show()
         f.slotFrame:Show()
@@ -726,7 +800,7 @@ local function ShowSelectMode(data)
     MK.data = nil
     MK.mode = "select"
 
-    f.txtLevel:SetText("|cFF00CCFFChoisissez un donjon|r")
+    f.txtLevel:SetText(L.SELECT_DUNGEON_TITLE)
     f.txtDungeon:SetText("")
     f.txtTimer:SetText("")
     f.txtLive:SetText("")
@@ -738,7 +812,7 @@ local function ShowSelectMode(data)
     f.circleFrame:Hide()
     f.btnActivate:ClearAllPoints()
     f.btnActivate:SetPoint("BOTTOM", f, "BOTTOM", 0, 10)
-    f.btnActivate:SetText("Confirmer")
+    f.btnActivate:SetText(L.BTN_CONFIRM)
     f.btnActivate:Show()
     f.btnChangeDungeon:Hide()
     f.bgTex:SetVertexColor(1,1,1)
@@ -759,8 +833,8 @@ local function ShowSelectMode(data)
         btn:SetPoint("TOP", f.listFrame, "TOP", 0, -(idx-1)*28)
         local mins     = math.floor((entry.info.timer or 0) / 60)
         local pLevel   = entry.info.playerLevel or 0
-        local levelStr = pLevel > 0 and ("  |cFFFFD700Niv." .. pLevel .. "|r") or "  |cFF888888Niv.1|r"
-        btn:SetText(string.format("%s  [%d min]", entry.info.name, mins) .. levelStr)
+        local levelStr = pLevel > 0 and ("  |cFFFFD700" .. L.LEVEL_SHORT .. pLevel .. "|r") or ("  |cFF888888" .. L.LEVEL_SHORT .. "1|r")
+        btn:SetText(string.format("%s  [%d " .. L.MIN_SHORT .. "]", entry.info.name, mins) .. levelStr)
 
         -- Texture de sélection – SetColorTexture n'existe pas en 3.3.5,
         -- on utilise une texture blanche teintée via SetVertexColor + SetAlpha.
@@ -798,7 +872,7 @@ local function ShowSelectMode(data)
             borderTex:Show()
             btn:GetFontString():SetTextColor(1, 0.82, 0)  -- texte doré
             f.txtDungeon:SetText("|cFFFFD700" .. entry.info.name .. "|r")
-            f.txtTimer:SetText(mins .. " Minutes")
+            f.txtTimer:SetText(mins .. L.MINUTES_SUFFIX)
         end)
         table.insert(MK.dungeonButtons, btn)
     end
@@ -824,14 +898,13 @@ function MKClientHandlers.KeystoneGranted(player, data)
     if not data then return end
     ClearDungeonButtons()
     ShowViewMode(data)
-    print("|cFF00CCFF[Mythic+]|r Clé mythique obtenu : |cFFFFD700" ..
-          (data.dungeon or "?") .. "|r  Niveau " .. (data.level or 1))
+    print(string.format(L.MSG_KEYSTONE_OBTAINED, tostring(data.dungeon or "?"), tostring(data.level or 1)))
 end
 
 function MKClientHandlers.KeystoneUpgraded(player, data)
     if not data then return end
     ShowViewMode(data)
-    print("|cFF00CCFF[Mythic+]|r Clé mythique > Niveau |cFFFFD700" .. (data.level or "?") .. "|r")
+    print(string.format(L.MSG_KEYSTONE_UPGRADED, tostring(data.level or "?")))
 end
 
 function MKClientHandlers.UpdateTimer(player, data)
@@ -841,7 +914,7 @@ function MKClientHandlers.UpdateTimer(player, data)
     if data.bossKilled and data.totalBoss then
         local f = MK.frame
         if f and f:IsShown() then
-            f.txtBosses:SetText(string.format("Bosses : %d / %d", data.bossKilled, data.totalBoss))
+            f.txtBosses:SetText(string.format(L.BOSSES_LABEL, data.bossKilled, data.totalBoss))
         end
     end
 end
@@ -862,9 +935,9 @@ function MKClientHandlers.StartCountdown(player, seconds)
     end
 
     -- Overlay SystemTimer centré (chiffre + logo faction + sablier)
-    ST_StartCountdown(seconds, "Mythic+ commence dans…", true)
+    ST_StartCountdown(seconds, L.COUNTDOWN_LABEL, true)
 
-    print("|cFF00CCFF[Mythic+]|r Le run commence dans " .. seconds .. " secondes !")
+    print(string.format(L.MSG_RUN_STARTS_IN, tostring(seconds)))
 end
 
 -- Le timer réel démarre
@@ -891,7 +964,7 @@ function MKClientHandlers.RunActivated(player, data)
 
     f:Show()
     StartPulse()
-    print("|cFF00FF00[Mythic+]|r C'est parti ! Timer démarré.")
+    print(L.MSG_RUN_STARTED)
 end
 
 function MKClientHandlers.RunDepleted(player)
@@ -899,20 +972,20 @@ function MKClientHandlers.RunDepleted(player)
     MK.liveRemaining = 0
     if MK.frame then
         MK.frame.txtLive:SetTextColor(C.RED[1], C.RED[2], C.RED[3])
-        MK.frame.txtLive:SetText("|cFFFF3333⚠ DÉPLÉTÉ|r")
+        MK.frame.txtLive:SetText(L.DEPLETED_WARNING)
         MK.frame.bgTex:SetVertexColor(1, 0.4, 0.4)
     end
-    print("|cFFFF3333[Mythic+] Timer expiré – run déplété.|r")
+    print(L.MSG_TIMER_EXPIRED)
 end
 
 function MKClientHandlers.BossKilled(player, killed, total)
     if MK.frame and MK.frame:IsShown() then
-        MK.frame.txtBosses:SetText(string.format("Bosses : %d / %d", killed, total))
+        MK.frame.txtBosses:SetText(string.format(L.BOSSES_LABEL, killed, total))
         for i = 1, math.min(killed, 5) do
             SetNodeColor(i, C.GREEN)
         end
     end
-    print(string.format("|cFF00FF00[Mythic+] Boss tué ! (%d/%d)|r", killed, total))
+    print(string.format(L.MSG_BOSS_KILLED, killed, total))
 end
 
 function MKClientHandlers.RunComplete(player, data)
@@ -922,16 +995,16 @@ function MKClientHandlers.RunComplete(player, data)
     local msg
     if data and data.inTime then
         msg = string.format(
-            "|cFFFFD700Run terminé dans le timer ! +%d niv (%d)|r",
+            L.MSG_RUN_COMPLETE_INTIME,
             data.upgradeBonus or 0, data.newLevel or 0)
     else
-        msg = "|cFFFF8800Run terminé (déplété). Clé mythique perdu.|r"
+        msg = L.MSG_RUN_COMPLETE_DEPLETED
     end
     if MK.frame then MK.frame:Hide() end
-    print("|cFF00CCFF[Mythic+]|r " .. msg)
+    print(L.MSG_RUN_COMPLETE_PREFIX .. msg)
     StaticPopupDialogs["MK_RUN_COMPLETE"] = {
         text    = msg,
-        button1 = "OK",
+        button1 = L.POPUP_OK,
         timeout = 0, whileDead=false, hideOnEscape=true,
         OnAccept = function()
             if data and data.inTime then AIO.Handle("MKServer", "OpenUI") end
@@ -941,15 +1014,15 @@ function MKClientHandlers.RunComplete(player, data)
 end
 
 function MKClientHandlers.NoActiveRun(player)
-    print("|cFFAAAAAA[Mythic+] Aucun run actif dans cette instance.|r")
+    print(L.MSG_NO_ACTIVE_RUN)
 end
 
 function MKClientHandlers.NoKeystone(player)
-    print("|cFFFF4444[Mythic+] Vous n'avez pas de Clé mythique actif.|r")
+    print(L.MSG_NO_KEYSTONE)
 end
 
 function MKClientHandlers.Error(player, msg)
-    print("|cFFFF4444[Mythic+] Erreur :|r " .. tostring(msg))
+    print(L.MSG_ERROR_PREFIX .. tostring(msg))
 end
 
 -- ─────────────────────────────────────────────────────────────
@@ -983,7 +1056,7 @@ function TimerHandlers.StateSync(player, duration, startTime, label, paused, pau
     local elapsed = paused and (pausedAt - startTime) or (now - startTime)
     local remain  = math.max(0, (tonumber(duration) or 0) - elapsed)
     if remain > 0 then
-        ST_StartCountdown(math.floor(remain), label or "Timer", false)
+        ST_StartCountdown(math.floor(remain), label or L.DEFAULT_TIMER_LABEL, false)
         ST.elapsed = ST.duration - remain
         if paused then ST.active = false end
     end
@@ -1010,7 +1083,7 @@ SlashCmdList["SYSTEMTIMER"] = function(msg)
     else
         local dur, lbl = msg:match("^(%d+)%s*(.*)")
         if dur then
-            lbl = (lbl and lbl ~= "") and lbl or "Timer"
+            lbl = (lbl and lbl ~= "") and lbl or L.DEFAULT_TIMER_LABEL
             AIO.Handle("SystemTimer", "StartTimer", tonumber(dur), lbl)
         end
     end
