@@ -1,3 +1,40 @@
+-- ============================================================
+--  ChoiceSpellClassClient.lua
+--  TrinityCore 3.3.5 (Universe) — Eluna + AIO
+--
+--  Les 9 classes secondaires sont alignees sur UNE SEULE rangee en
+--  haut de la fenetre, groupees par 3 selon les 2 barres verticales
+--  natives du fond legionfall (Cavalier/Dompteur/Evocateur, puis
+--  Necromancien/Empoisonneur/Pyromancien, puis
+--  Chronomancien/Geomancien/Ravageur du Chaos). Sous chaque icone de
+--  classe, les sorts sont listes A LA VERTICALE (pile d'icones) avec
+--  une fleche de pagination cyclique (pointant vers le bas) au pied
+--  de la pile. On choisit librement les aptitudes de son build, en
+--  cliquant directement sur l'icone d'une case, dans N'IMPORTE
+--  QUELLE colonne (melange libre). Respec libre et gratuit : cliquer
+--  sur une aptitude deja apprise (icone grisee) la desapprend.
+--  Bouton "Reinitialiser tous les sorts" pour tout retirer d'un coup.
+--
+--  Habillage 100% custom (aucun asset Blizzard de base) :
+--    - fond de la fenetre : Interface\legionfall\legionfall
+--      (seule la partie HAUTE du parchemin est utilisee — la
+--      bande du bas avec les vignettes/boutons est exclue via
+--      recadrage TexCoord)
+--    - icone de classe (a la place d'une etiquette texte) :
+--      Interface\Glues\CHARACTERCREATE\UI-CHARACTERCREATE-CLASSES
+--    - anneau d'icone de classe + fleche de pagination + plaque bouton :
+--      Interface\Journeys\JourneysFrame2x (meme atlas que Rebirth)
+--    - contour des cases de sort : meme bordure que les onglets
+--      Jouets/Heritage du systeme de Collection (Interface\Collections\Collections)
+--    - bouton fermer : plaque + croix (meme atlas que le reste de l'UI)
+--    - tooltip natif sur l'icone de classe (nom) et sur chaque case
+--      de sort (nom + description, via GameTooltip:SetHyperlink)
+--
+--  Ouverture : commande /sortschoix (ou /ssc), ou bouton sur la
+--  fenetre de personnage (visible seulement pour les 9 classes
+--  secondaires).
+-- ============================================================
+
 local AIO = AIO or require("AIO")
 
 if AIO.AddAddon() then
@@ -5,6 +42,33 @@ if AIO.AddAddon() then
 end
 
 local ChoiceSpellClassHandlers = AIO.AddHandlers("ChoiceSpellClassHandler", {})
+
+-- ------------------------------------------------------------
+--  Bilingue frFR/enUS : contrairement au reste du serveur (qui
+--  passe par account.locale cote auth DB pour les messages de
+--  chat), ce script tourne reellement dans le client -> on utilise
+--  directement l'API native GetLocale() du jeu, plus simple et
+--  plus fiable qu'un aller-retour serveur pour l'habillage de l'UI.
+-- ------------------------------------------------------------
+local CLIENT_LOCALE = (GetLocale() == "frFR") and "frFR" or "enUS"
+
+local UI_STRINGS = {
+    enUS = {
+        title            = "Secondary Class Abilities",
+        slots            = "Levels: %d / %d",
+        resetButton      = "Reset All Spells",
+        cfTooltipTitle   = "Secondary Class Abilities",
+        cfTooltipLine    = "Click to open (or /ssc)",
+    },
+    frFR = {
+        title            = "Aptitudes de Classe Secondaire",
+        slots            = "Niveaux : %d / %d",
+        resetButton      = "Réinitialiser tous les sorts",
+        cfTooltipTitle   = "Aptitudes de classe secondaire",
+        cfTooltipLine    = "Clic pour ouvrir (ou /ssc)",
+    },
+}
+local STR = UI_STRINGS[CLIENT_LOCALE]
 
 local CLIENT_CATALOG = {
     Cavalier = {
@@ -186,18 +250,40 @@ local CLIENT_CATALOG = {
     },
 }
 
-local CLASS_LABELS = {
+local CLASS_LABELS_EN = {
     Cavalier = "Cavalier",
     Chronomancer = "Chronomancer",
-    Dompteur = "Dompteur",
-    Evoker = "Evocateur",
+    Dompteur = "Tamer",
+    Evoker = "Evoker",
     Geomancer = "Geomancer",
     Necromancer = "Necromancer",
     Pyromancer = "Pyromancer",
-    RavageurChaos = "Ravageur du Chaos",
+    RavageurChaos = "Chaos Ravager",
     Venomancer = "Venomancer",
 }
+local CLASS_LABELS_FR = {
+    Cavalier = "Cavalier",
+    Chronomancer = "Chronomancien",
+    Dompteur = "Dompteur",
+    Evoker = "Evocateur",
+    Geomancer = "Geomancien",
+    Necromancer = "Necromancien",
+    Pyromancer = "Pyromancien",
+    RavageurChaos = "Ravageur du Chaos",
+    Venomancer = "Empoisonneur",
+}
+local CLASS_LABELS = (CLIENT_LOCALE == "frFR") and CLASS_LABELS_FR or CLASS_LABELS_EN
 
+-- Les 9 classes sont affichees sur UNE SEULE rangee, en tete de
+-- fenetre, groupees par 3 selon les 2 barres verticales du fond
+-- legionfall :
+--   Groupe 1 (avant la 1ere barre)  : Cavalier, Dompteur, Evocateur
+--   Groupe 2 (entre les 2 barres)   : Necromancien, Empoisonneur, Pyromancien
+--   Groupe 3 (apres la 2eme barre)  : Chronomancien, Geomancien, Ravageur du Chaos
+-- Chaque sort de la classe se deroule EN COLONNE sous son icone.
+-- x = position horizontale (pixels) du centre de la colonne, mesuree
+-- proportionnellement sur le fond legionfall puis mise a l'echelle
+-- de FRAME_W (voir Configuration visuelle plus bas).
 local CLASS_ORDER = { "Cavalier", "Dompteur", "Evoker", "Necromancer", "Venomancer", "Pyromancer", "Chronomancer", "Geomancer", "RavageurChaos" }
 local COL_X_FRACTION = {
     Cavalier      = 0.0924,
@@ -210,11 +296,15 @@ local COL_X_FRACTION = {
     Geomancer     = 0.8222,
     RavageurChaos = 0.9284,
 }
-
+-- Ajustement fin en pixels (apres mise a l'echelle par FRAME_W) :
+-- la colonne Ravageur du Chaos a ete demandee 10px plus a gauche.
 local COL_X_OFFSET = {
     RavageurChaos = -10,
 }
 
+-- Correspondance classID numerique (WoW) -> notre classKey, utilisee
+-- uniquement pour savoir si le joueur local est une classe secondaire
+-- (afficher ou non le bouton sur la fenetre de personnage).
 local CLASS_ID_TO_KEY = {
     [12] = "Cavalier",
     [15] = "Dompteur",
@@ -227,36 +317,79 @@ local CLASS_ID_TO_KEY = {
     [23] = "RavageurChaos",
 }
 
+-- Coordonnees fournies (table CLASS_ICON_TCOORDS), sur l'atlas
+-- UI-CHARACTERCREATE-CLASSES (8x8 cases). Mapping vers nos 9 classes :
+--   Cavalier       -> KNIGHT        (icone cheval, pas d'entree "CAVALIER" dans ta table)
+--   Dompteur       -> TAMER         (Tamer = Dompteur)
+--   Evoker         -> EVOKER        (correspondance directe)
+--   RavageurChaos  -> CHAOSRAVAGER  (correspondance directe)
+--   Chronomancer / Geomancer / Necromancer / Pyromancer / Venomancer :
+--     ces 5 entrees pointent TOUTES vers les memes coordonnees
+--     {0.125,0.25,0.25,0.375} dans la table que tu as partagee ->
+--     c'est normal / attendu (confirme par toi), elles partagent la
+--     meme icone tant qu'il n'y en a pas de dediees.
 local CLASS_ICON_COORDS = {
-    Cavalier      = { 0.625, 0.75, 0, 0.125 },
+    Cavalier      = { 0.625, 0.75, 0, 0.125 },       -- KNIGHT
     Chronomancer  = { 0.125, 0.25, 0.25, 0.375 },
-    Dompteur      = { 0.5, 0.625, 0, 0.125 },
+    Dompteur      = { 0.5, 0.625, 0, 0.125 },        -- TAMER
     Evoker        = { 0, 0.125, 0.125, 0.25 },
     Geomancer     = { 0.125, 0.25, 0.25, 0.375 },
     Necromancer   = { 0.125, 0.25, 0.25, 0.375 },
     Pyromancer    = { 0.125, 0.25, 0.25, 0.375 },
-    RavageurChaos = { 0, 0.125, 0.5, 0.625 },
+    RavageurChaos = { 0, 0.125, 0.5, 0.625 },        -- CHAOSRAVAGER
     Venomancer    = { 0.125, 0.25, 0.25, 0.375 },
 }
 
+-- ------------------------------------------------------------
+--  Configuration visuelle
+-- ------------------------------------------------------------
+-- Fenetre 820x820 : les 9 classes sont sur UNE SEULE rangee en haut,
+-- chacune avec sa pile verticale de sorts en dessous. COL_X_FRACTION
+-- (ci-dessus) donne la position horizontale de chaque colonne en
+-- fraction de la largeur du parchemin (mesuree pour tomber pile
+-- entre/sur les 2 barres verticales du fond legionfall) ; on la
+-- multiplie par FRAME_W. HEADER_H encore augmente (+20px, 4e retour
+-- joueur) pour redescendre les 9 colonnes sous le titre + hauteur de
+-- fenetre augmentee en consequence pour que la pile de 12 sorts/page
+-- tienne toujours confortablement.
 local FRAME_W, FRAME_H = 1200, 790
 local CLASS_ICON_SIZE = 60
 local ICON_SIZE = 44
 local ICON_GAP = 4
 local ICONS_PER_COL = 12
 local ICON_PITCH = ICON_SIZE + ICON_GAP
-local HEADER_H = 88     -- titre + compteur d'emplacements
+local HEADER_H = 88     -- titre + compteur d'emplacements (+20px : colonnes redescendues)
 local FOOTER_H = 34      -- bouton reinitialiser
 
+-- Assets 100% custom :
+--   Interface\legionfall\legionfall                            : fond (partie haute uniquement)
+--   Interface\Glues\CHARACTERCREATE\UI-CHARACTERCREATE-CLASSES : icone de classe
+--   Interface\Journeys\JourneysFrame2x                        : anneau de case d'icone,
+--     fleche de pagination et plaque du bouton "Reinitialiser"
+--     (meme atlas que le systeme Rebirth). Coordonnees mesurees sur
+--     les textures source :
+--       RING_COORD   : anneau d'icone (journeysframe2x, atlas 2048x2048, box pixel 688,208-806,326)
+--       ARROW_NEXT   : fleche pleine  (journeysframe2x, box pixel 5,5-46,76)
+--       PLATE_NORMAL : plaque bouton  (journeysframe2x, box pixel 54,210-686,419)
+--       BG_COORD     : legionfall.blp (atlas 1024x1024) — box pixel (3,4)-(871,576), le
+--         "parchemin" du haut uniquement. La bande du bas (vignettes de zone /
+--         boutons, pixel y>578) est explicitement exclue, comme demande.
 local BG_TEXTURE         = "Interface\\legionfall\\legionfall"
 local ATLAS_TEXTURE      = "Interface\\Journeys\\JourneysFrame2x"
 local CLASS_ICON_TEXTURE = "Interface\\Glues\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
 local RING_COORD    = { 0.335938, 0.393555, 0.101563, 0.159180 }
-
+-- Contour des CASES DE SORT (uniquement) : meme bordure carree que les
+-- onglets Jouets/Heritage du systeme de Collection ("collections-itemborder-
+-- collected", 56x56, deja presente cote client Universe -> aucun fichier a
+-- livrer). L'icone de classe garde son propre anneau (RING_COORD ci-dessus).
 local ITEM_BORDER_TEXTURE = "Interface\\Collections\\Collections"
 local ITEM_BORDER_COORD   = { 0.246094, 0.355469, 0.013672, 0.123047 }
 local ARROW_NEXT     = { 0.002441, 0.022461, 0.002441, 0.037109 }
-
+-- Meme morceau d'atlas que ARROW_NEXT, mais tourne de 90 degres
+-- (forme 8 valeurs de SetTexCoord : HG, BG, HD, BD) pour pointer
+-- vers le bas — la pile de sorts est verticale, la fleche de
+-- pagination doit donc pointer "vers le bas de la pile" plutot que
+-- vers la droite.
 local ARROW_NEXT_DOWN = {
     ARROW_NEXT[1], ARROW_NEXT[4],   -- haut-gauche  = (L, B)
     ARROW_NEXT[2], ARROW_NEXT[4],   -- bas-gauche   = (R, B)
@@ -287,6 +420,12 @@ local RowByClass = {}   -- [classKey] = { frame, icons={}, arrow, pageText, page
 local RefreshRow
 local RefreshAllRows
 
+-- ------------------------------------------------------------
+--  Construit une colonne "classe" : icone de classe en haut (toutes
+--  les classes sont alignees sur la MEME ligne horizontale), puis
+--  une PILE VERTICALE d'icones de sort en dessous, avec une fleche
+--  de pagination cyclique (pointant vers le bas) au pied de la pile.
+-- ------------------------------------------------------------
 local function CreateClassRow(classKey, centerX)
     local blockTop = -HEADER_H
 
@@ -339,7 +478,9 @@ local function CreateClassRow(classKey, centerX)
         slot:SetScript("OnEnter", function(self)
             if self.spellId then
                 GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-
+                -- NOTE : SetSpellByID n'existe pas sur le client 3.3.5 (ajoute
+                -- dans des clients plus recents) ; sur WotLK il faut passer
+                -- par un hyperlien "spell:<id>" pour obtenir nom+description.
                 GameTooltip:SetHyperlink("spell:" .. self.spellId)
                 GameTooltip:Show()
                 self.ring:SetVertexColor(1, 1, 0.55)
@@ -367,6 +508,8 @@ local function CreateClassRow(classKey, centerX)
         icons[i] = slot
     end
 
+    -- Fleche de pagination cyclique (pointe vers le bas) + compteur "X/Y",
+    -- sous la pile de sorts.
     local arrow = CreateFrame("Button", nil, row)
     arrow:SetSize(20, 20)
     arrow:SetPoint("TOP", icons[ICONS_PER_COL], "BOTTOM", 0, -6)
@@ -413,6 +556,8 @@ local function EnsureMainFrame()
     MainFrame = CreateFrame("Frame", "ChoiceSpellClassFrame", UIParent)
     MainFrame:SetSize(FRAME_W, FRAME_H)
     MainFrame:SetPoint("CENTER")
+    -- Strata la plus haute possible (au-dessus de toutes les autres UI,
+    -- y compris les autres fenetres custom) + niveau eleve dans cette strata.
     MainFrame:SetFrameStrata("FULLSCREEN_DIALOG")
     MainFrame:SetFrameLevel(200)
     MainFrame:SetToplevel(true)
@@ -422,24 +567,33 @@ local function EnsureMainFrame()
     MainFrame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     MainFrame:SetScript("OnDragStop",  function(self) self:StopMovingOrSizing() end)
 
+    -- Fond plein 100% custom (aucun backdrop Blizzard) : uniquement la
+    -- partie haute du parchemin legionfall (cf BG_COORD), la bande du
+    -- bas avec les vignettes/boutons n'est jamais affichee.
     local bg = MainFrame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints(MainFrame)
     bg:SetTexture(BG_TEXTURE)
     bg:SetTexCoord(unpack(BG_COORD))
     MainFrame.bg = bg
 
+    -- Titre : police "parchemin/titre" MORPHEUS (meme famille que les
+    -- titres de quete/hauts faits Blizzard) plutot que la police d'UI
+    -- generique FRIZQT__, en dore, pour se detacher du fond legionfall.
     local title = MainFrame:CreateFontString(nil, "OVERLAY")
     title:SetFont("Fonts\\MORPHEUS.TTF", 20, "OUTLINE")
     title:SetPoint("TOP", MainFrame, "TOP", 0, -14)
     title:SetTextColor(255, 255, 255)
-    title:SetText("")
+    title:SetText(STR.title)
 
     SlotText = MainFrame:CreateFontString(nil, "OVERLAY")
     SlotText:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
     SlotText:SetPoint("TOP", title, "BOTTOM", -480, -20)
     SlotText:SetTextColor(255, 255, 255)
-    SlotText:SetText("Niveaux : 0 / 0")
+    SlotText:SetText(string.format(STR.slots, 0, 0))
 
+    -- Bouton fermer : plaque ronde (meme atlas que l'anneau d'icone de
+    -- classe, Interface\Journeys\JourneysFrame2x) + croix "X" par-dessus,
+    -- au lieu d'un texte flottant sans fond.
     local closeBtn = CreateFrame("Button", nil, MainFrame)
     closeBtn:SetSize(26, 26)
     closeBtn:SetPoint("TOPRIGHT", MainFrame, "TOPRIGHT", -30, -30)
@@ -470,11 +624,14 @@ local function EnsureMainFrame()
 
     tinsert(UISpecialFrames, "ChoiceSpellClassFrame")
 
+    -- ── 9 classes sur une seule rangee (groupees 3/3/3 par les
+    --    2 barres verticales du fond legionfall) ─────────────
     for _, classKey in ipairs(CLASS_ORDER) do
         local centerX = FRAME_W * (COL_X_FRACTION[classKey] or 0.5) + (COL_X_OFFSET[classKey] or 0)
         CreateClassRow(classKey, centerX)
     end
 
+    -- ── Bouton "Reinitialiser tous les sorts" ───────────────
     local resetBtn = CreateFrame("Button", nil, MainFrame)
     resetBtn:SetSize(200, 26)
     resetBtn:SetPoint("BOTTOM", MainFrame, "BOTTOM", 400, 730)
@@ -488,7 +645,7 @@ local function EnsureMainFrame()
     local resetLabel = resetBtn:CreateFontString(nil, "OVERLAY")
     resetLabel:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
     resetLabel:SetPoint("CENTER")
-    resetLabel:SetText("Réinitialiser tous les sorts")
+    resetLabel:SetText(STR.resetButton)
     resetLabel:SetTextColor(255, 255, 255)
 
     resetBtn:SetScript("OnEnter", function(self) self.bg:SetVertexColor(1, 0.7, 0.7) end)
@@ -500,9 +657,12 @@ local function EnsureMainFrame()
     MainFrame:Hide()
 end
 
+-- ------------------------------------------------------------
+--  Met a jour le texte du compteur d'emplacements
+-- ------------------------------------------------------------
 local function RefreshSlotText()
     if not SlotText then return end
-    SlotText:SetText("Niveaux : " .. usedSlots .. " / " .. maxSlots)
+    SlotText:SetText(string.format(STR.slots, usedSlots, maxSlots))
     if usedSlots >= maxSlots then
         SlotText:SetTextColor(255, 255, 255)
     else
@@ -510,6 +670,9 @@ local function RefreshSlotText()
     end
 end
 
+-- ------------------------------------------------------------
+--  Reconstruit la page courante d'un bloc (classe)
+-- ------------------------------------------------------------
 RefreshRow = function(rowData)
     local abilities = CLIENT_CATALOG[rowData.classKey] or {}
     local total = #abilities
@@ -530,20 +693,26 @@ RefreshRow = function(rowData)
             slot.hasAbility = true
 
             local name, _, icon = GetSpellInfo(ability.id)
+            slot.icon:SetTexture(icon or "Interface\\Icons\\INV_Misc_QuestionMark")
+            slot.icon:Show()
 
             local chosen = myChoices[ChoiceId(rowData.classKey, ability.key)] == true
             slot.chosen = chosen
-
-            slot.icon:SetTexture(icon or "Interface\\Icons\\INV_Misc_QuestionMark")
-
+            -- Une aptitude apprise se grise (icone desaturee) ; recliquer
+            -- sur une icone grisee la desapprend (deja gere par OnClick).
+            slot.icon:SetDesaturated(chosen)
             if chosen then
-                slot.icon:SetVertexColor(0.45, 0.45, 0.45)
                 slot.ring:SetVertexColor(0.55, 0.55, 0.55)
             else
-                slot.icon:SetVertexColor(1, 1, 1)
                 slot.ring:SetVertexColor(1, 1, 1)
             end
         else
+            -- FIX : plutot que d'afficher un cadre vide (ce qui donnait
+            -- l'impression d'un "emplacement manquant" a chaque nouveau
+            -- retour joueur, quelle que soit la taille du catalogue), on
+            -- masque entierement la case des qu'il n'y a plus d'aptitude
+            -- a afficher sur cette page. Plus aucune case vide visible,
+            -- quel que soit le nombre total d'aptitudes de la classe.
             slot.hasAbility = false
             slot.spellId = nil
             slot.chosen = false
@@ -561,6 +730,9 @@ RefreshRow = function(rowData)
     end
 end
 
+-- ------------------------------------------------------------
+--  Reconstruit tous les blocs (les 9 classes)
+-- ------------------------------------------------------------
 RefreshAllRows = function()
     for _, classKey in ipairs(CLASS_ORDER) do
         local rowData = RowByClass[classKey]
@@ -570,6 +742,10 @@ RefreshAllRows = function()
     end
 end
 
+-- ------------------------------------------------------------
+--  Handler AIO : reception de l'etat depuis le serveur
+--  (maxSlots, usedSlots, "classKey|abilityKey", "classKey|abilityKey", ...)
+-- ------------------------------------------------------------
 function ChoiceSpellClassHandlers.SyncState(player, newMax, newUsed, ...)
     maxSlots  = tonumber(newMax) or 0
     usedSlots = tonumber(newUsed) or 0
@@ -586,13 +762,18 @@ function ChoiceSpellClassHandlers.SyncState(player, newMax, newUsed, ...)
     end
 end
 
+-- ------------------------------------------------------------
+--  Ouverture / fermeture de l'interface
+-- ------------------------------------------------------------
 local function ToggleChoiceSpellClassFrame()
     EnsureMainFrame()
     if MainFrame:IsShown() then
         MainFrame:Hide()
         return
     end
-
+    -- Revient toujours a la page 1 (la plus remplie) a l'ouverture, pour
+    -- eviter de rester bloque sur une page de fin partiellement vide dont
+    -- on se souvenait d'une session precedente.
     for _, classKey in ipairs(CLASS_ORDER) do
         local rowData = RowByClass[classKey]
         if rowData then rowData.page = 1 end
@@ -606,13 +787,29 @@ SLASH_SORTSCHOIX1 = "/sortschoix"
 SLASH_SORTSCHOIX2 = "/ssc"
 SlashCmdList["SORTSCHOIX"] = ToggleChoiceSpellClassFrame
 
+-- ------------------------------------------------------------
+--  Bouton sur la fenetre de personnage (CharacterFrame), visible
+--  uniquement si le joueur local est une des 9 classes secondaires.
+--  Evite d'avoir a taper /ssc.
+-- ------------------------------------------------------------
 local function CreateCharacterFrameButton()
     if not CharacterFrame then return end
 
     local _, _, classId = UnitClass("player")
     local classKey = CLASS_ID_TO_KEY[classId]
-    if not classKey then return end
+    if not classKey then return end -- pas une classe secondaire : pas de bouton
 
+    -- FIX v2 : les 2 tentatives precedentes (ancrage a gauche puis a droite,
+    -- toutes deux EN DEHORS des bords de CharacterFrame) restaient invisibles.
+    -- CharacterFrame sur ce serveur est un cadre entierement reskinne (voir
+    -- SyphrenaPanel.lua fourni par le joueur : son bouton "Grimoire d'identite"
+    -- est un CreateFrame("Button", ..., CharacterFrame) ancre A L'INTERIEUR du
+    -- cadre, en TOPRIGHT-TOPRIGHT avec un petit decalage negatif, et IL EST
+    -- BIEN VISIBLE en jeu) -> tout ce qui depasse le rectangle logique de
+    -- CharacterFrame est probablement rogne par le skin. On reproduit
+    -- exactement ce pattern : ancrage interieur, juste sous le bouton
+    -- Grimoire (qui occupe -10,-30 sur 28x28), et on lie la visibilite a
+    -- PaperDollFrame comme le fait SyphrenaPanel.lua.
     local btn = CreateFrame("Button", "ChoiceSpellClassCFButton", CharacterFrame)
     btn:SetSize(30, 30)
     btn:SetFrameStrata("HIGH")
@@ -632,8 +829,8 @@ local function CreateCharacterFrameButton()
     btn:SetScript("OnClick", ToggleChoiceSpellClassFrame)
     btn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-        GameTooltip:SetText("Codex des pouvoirs", 1, 1, 1)
-        GameTooltip:AddLine("Combinez vos aptitudes de classe secondaire.", 1, 0.82, 0, true)
+        GameTooltip:SetText(STR.cfTooltipTitle)
+        GameTooltip:AddLine(STR.cfTooltipLine, 0.8, 0.8, 0.8)
         GameTooltip:Show()
         ring:SetVertexColor(1, 1, 0.6)
     end)
@@ -642,6 +839,8 @@ local function CreateCharacterFrameButton()
         ring:SetVertexColor(1, 1, 1)
     end)
 
+    -- Meme comportement que le bouton Grimoire d'identite : visible
+    -- uniquement sur l'onglet "Personnage" (PaperDollFrame).
     btn:Hide()
     if PaperDollFrame then
         PaperDollFrame:HookScript("OnShow", function() btn:Show() end)
@@ -652,6 +851,12 @@ local function CreateCharacterFrameButton()
     end
 end
 
+-- FIX v3 : garde + declencheurs multiples. Sur ce serveur, UnitClass("player")
+-- peut ne pas encore renvoyer le bon classId (classes custom) au moment de
+-- PLAYER_LOGIN, et/ou CharacterFrame peut etre recree plus tard par le skin
+-- custom (SyphrenaPanel ou equivalent) -> une seule tentative a un seul
+-- moment ne suffit pas forcement. On reessaie a plusieurs moments distincts
+-- jusqu'a ce que ca reussisse (le garde evite de creer le bouton 2 fois).
 local buttonCreated = false
 local function TryCreateCharacterFrameButton()
     if buttonCreated then return end
@@ -669,6 +874,8 @@ initFrame:SetScript("OnEvent", function()
     TryCreateCharacterFrameButton()
 end)
 
+-- Filet de securite final : si CharacterFrame existe deja, on retente aussi
+-- a chaque ouverture de la fenetre de personnage (sans cout si deja cree).
 if CharacterFrame then
     CharacterFrame:HookScript("OnShow", TryCreateCharacterFrameButton)
 end
