@@ -13,7 +13,7 @@ function RogueHandlers.ShowTalentRogue(player)
     AIO.Handle("TalentRoguespell", "GetTalentItemCount")
 end
 
-local MAX_TALENTS = 70 -- Définition du nombre maximal de talents que le joueur peut apprendre
+local MAX_TALENTS = 60 -- Définition du nombre maximal de talents que le joueur peut apprendre
 
 local OPEN_TALENT_WINDOW_SOUND = "Sound\\TalentsSystem\\ui_72_artifact_forge_final_trait_unlocked.ogg"
 local CLOSE_TALENT_WINDOW_SOUND = "Sound\\TalentsSystem\\ui_72_artifact_forge_trait_refund_end.ogg"

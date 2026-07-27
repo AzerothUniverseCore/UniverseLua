@@ -140,6 +140,8 @@ local function LearnTalent(player, talent, talentHandler)
 
                 CharDBQuery("REPLACE INTO character_talentspell (guid, account_id, spell, active) VALUES ("
                     .. guid .. ", " .. accountID .. ", " .. spellID .. ", 1);")
+					
+					player:SaveToDB()
 
                 AIO.Handle(player, "TalentDruidspell", "UpdateTalentCount", #spendList, MAX_TALENTS)
                 AIO.Handle(player, "TalentDruidspell", "UpdateTalentItemCount", GetTalentItemCount(player))
@@ -218,6 +220,11 @@ local function OnPlayerLogin(event, player)
 end
 RegisterPlayerEvent(3, OnPlayerLogin)
 
+local function OnPlayerLevelChange(event, player, oldLevel)
+    LoadTalentProgression(player)
+end
+RegisterPlayerEvent(13, OnPlayerLevelChange)
+
 -- Supprime les données de talent lorsqu'un personnage est supprimé.
 -- PLAYER_EVENT_ON_CHARACTER_DELETE (2) passe (event, guid) — pas d'objet player disponible.
 local function OnCharacterDelete(event, guid)
@@ -253,4 +260,6 @@ DruidHandlers.ResetTalents = function(player)
 
     player:AddItem(338404, pointsBeforeReset)
     AIO.Handle(player, "TalentDruidspell", "UpdateTalentItemCount", GetTalentItemCount(player))
+	
+	player:SaveToDB()
 end

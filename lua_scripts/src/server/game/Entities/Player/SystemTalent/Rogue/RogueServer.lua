@@ -2,7 +2,7 @@ local AIO = AIO or require("AIO")
 local RogueHandlers = AIO.AddHandlers("TalentRoguespell", {})
 local TalentRoguePointsSpend = {}
 
-local MAX_TALENTS = 70
+local MAX_TALENTS = 60
 
 local talents = {
 	-- Template 1
@@ -144,12 +144,7 @@ local function LearnTalent(player, talent, talentHandler)
                 CharDBQuery("REPLACE INTO character_talentspell (guid, account_id, spell, active) VALUES ("
                     .. guid .. ", " .. accountID .. ", " .. spellID .. ", 1);")
 
-                -- Sauvegarde immédiate : sans ça, le sort appris et l'objet
-                -- consommé ne sont écrits dans character_spell/character_inventory
-                -- qu'au prochain autosave périodique du coeur. Une déconnexion
-                -- (crash, ALT+F4, coupure réseau) avant ce tick perdait le talent
-                -- alors même que character_talentspell le montrait déjà comme acquis.
-                player:SaveToDB()
+					player:SaveToDB()
 
                 AIO.Handle(player, "TalentRoguespell", "UpdateTalentCount", #spendList, MAX_TALENTS)
                 AIO.Handle(player, "TalentRoguespell", "UpdateTalentItemCount", GetTalentItemCount(player))
@@ -228,6 +223,11 @@ local function OnPlayerLogin(event, player)
 end
 RegisterPlayerEvent(3, OnPlayerLogin)
 
+local function OnPlayerLevelChange(event, player, oldLevel)
+    LoadTalentProgression(player)
+end
+RegisterPlayerEvent(13, OnPlayerLevelChange)
+
 -- PLAYER_EVENT_ON_LEVEL_CHANGE (13) : re-applique les talents enregistrés
 -- en base à chaque montée de niveau. Corrige le cas où les talents
 -- semblaient "réinitialisés" après un level up alors qu'ils étaient
@@ -274,7 +274,5 @@ RogueHandlers.ResetTalents = function(player)
     player:AddItem(338404, pointsBeforeReset)
     AIO.Handle(player, "TalentRoguespell", "UpdateTalentItemCount", GetTalentItemCount(player))
 
-    -- Même raison que dans LearnTalent : on force l'écriture immédiate en
-    -- base pour ne pas dépendre du prochain autosave du coeur.
     player:SaveToDB()
 end
