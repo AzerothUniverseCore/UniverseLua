@@ -27,7 +27,7 @@ local parangon = {
         [7477] = 'Endurance',
         [7468] = 'Intelligence',
         [7597] = 'Coup Critique',
-        [37728] = 'Hâte',
+        [377280] = 'Hâte',
         [55565] = 'Puissance des sorts',
         [9136] = 'Puissance d\'attaque',
         [1502002] = 'Esquive',
@@ -216,7 +216,7 @@ function Player:setParangonInfo(strength, agility, stamina, intellect, criticalh
     self:SetData('parangon_stats_7477', stamina or 0)
     self:SetData('parangon_stats_7468', intellect or 0)
     self:SetData('parangon_stats_7597', criticalhit or 0)
-    self:SetData('parangon_stats_37728', haste or 0)
+    self:SetData('parangon_stats_377280', haste or 0)
     self:SetData('parangon_stats_55565', spellpower or 0)
     self:SetData('parangon_stats_9136', attackpower or 0)
     self:SetData('parangon_stats_1502002', dodge or 0)
@@ -348,7 +348,7 @@ function parangon.onLogout(event, player)
     local stamina = player:GetData('parangon_stats_7477') or 0
     local intellect = player:GetData('parangon_stats_7468') or 0
     local criticalhit = player:GetData('parangon_stats_7597') or 0
-    local haste = player:GetData('parangon_stats_37728') or 0
+    local haste = player:GetData('parangon_stats_377280') or 0
     local spellpower = player:GetData('parangon_stats_55565') or 0
     local attackpower = player:GetData('parangon_stats_9136') or 0
     local dodge = player:GetData('parangon_stats_1502002') or 0

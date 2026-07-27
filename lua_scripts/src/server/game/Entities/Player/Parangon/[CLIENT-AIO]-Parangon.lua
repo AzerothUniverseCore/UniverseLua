@@ -28,7 +28,7 @@ local ParangonLocales = {
             [7477] = "Endurance",
             [7468] = "Intelligence",
             [7597] = "Coup Critique",
-            [37728] = "Hâte",
+            [377280] = "Hâte",
             [55565] = "Puissance des sorts",
             [9136] = "Puissance d'attaque",
             [1502002] = "Esquive",
@@ -53,7 +53,7 @@ local ParangonLocales = {
             [7477] = "Stamina",
             [7468] = "Intellect",
             [7597] = "Critical Strike",
-            [37728] = "Haste",
+            [377280] = "Haste",
             [55565] = "Spell Power",
             [9136] = "Attack Power",
             [1502002] = "Dodge",
@@ -203,7 +203,7 @@ parangon.spellsList = {
   [7477] = {name = ParangonL.STAT_NAMES[7477], icon = '_D3mantraofretribution'},
   [7468] = {name = ParangonL.STAT_NAMES[7468], icon = '_D3mantraofhealing'},
   [7597] = {name = ParangonL.STAT_NAMES[7597], icon = 'inv_inscription_modified_craftingreagent01'},
-  [37728] = {name = ParangonL.STAT_NAMES[37728], icon = 'inv_inscription_modified_craftingreagent03'},
+  [377280] = {name = ParangonL.STAT_NAMES[377280], icon = 'inv_inscription_modified_craftingreagent03'},
   [55565] = {name = ParangonL.STAT_NAMES[55565], icon = 'spell_holy_greaterheal'},
   [9136] = {name = ParangonL.STAT_NAMES[9136], icon = 'spell_holy_excorcism'},
   [1502002] = {name = ParangonL.STAT_NAMES[1502002], icon = 'spell_nature_invisibilty'},
@@ -335,12 +335,12 @@ parangon.NextButton1 = CreateFrame("Button", parangon.NextButton1, parangon.main
 		parangon.rightButtons[7597]:SetPoint("Right", -20, parangon.buttonsCoords.global.pos_y)
 		parangon.rightText[7597]:SetPoint("CENTER", 0.5, 0)
 		
-		parangon.leftButtons[37728]:SetPoint("LEFT", 20, parangon.buttonsCoords.global.pos_y - 60)
-		parangon.leftButtonsArt[37728]:SetPoint("CENTER", 0, 0)
-		parangon.centerButtons[37728]:SetPoint("CENTER", 0, parangon.buttonsCoords.global.pos_y - 60)
-		parangon.centerText[37728]:SetPoint("CENTER", -1, 1)
-		parangon.rightButtons[37728]:SetPoint("Right", -20, parangon.buttonsCoords.global.pos_y - 60)
-		parangon.rightText[37728]:SetPoint("CENTER", 0.5, 0)
+		parangon.leftButtons[377280]:SetPoint("LEFT", 20, parangon.buttonsCoords.global.pos_y - 60)
+		parangon.leftButtonsArt[377280]:SetPoint("CENTER", 0, 0)
+		parangon.centerButtons[377280]:SetPoint("CENTER", 0, parangon.buttonsCoords.global.pos_y - 60)
+		parangon.centerText[377280]:SetPoint("CENTER", -1, 1)
+		parangon.rightButtons[377280]:SetPoint("Right", -20, parangon.buttonsCoords.global.pos_y - 60)
+		parangon.rightText[377280]:SetPoint("CENTER", 0.5, 0)
 		
 		parangon.leftButtons[55565]:SetPoint("LEFT", 20, parangon.buttonsCoords.global.pos_y - 120)
 		parangon.leftButtonsArt[55565]:SetPoint("CENTER", 0, 0)
@@ -459,14 +459,14 @@ parangon.NextButton1 = CreateFrame("Button", parangon.NextButton1, parangon.main
 		parangon.rightText[7597]:Hide()
 		parangon.rightButtonsTexture[7597]:Hide()
 		
-		parangon.leftButtons[37728]:Hide()
-		parangon.leftButtonsTexture[37728]:Hide()
-		parangon.leftButtonsArt[37728]:Hide()
-		parangon.centerButtons[37728]:Hide()
-		parangon.centerText[37728]:Hide()
-		parangon.rightButtons[37728]:Hide()
-		parangon.rightText[37728]:Hide()
-		parangon.rightButtonsTexture[37728]:Hide()
+		parangon.leftButtons[377280]:Hide()
+		parangon.leftButtonsTexture[377280]:Hide()
+		parangon.leftButtonsArt[377280]:Hide()
+		parangon.centerButtons[377280]:Hide()
+		parangon.centerText[377280]:Hide()
+		parangon.rightButtons[377280]:Hide()
+		parangon.rightText[377280]:Hide()
+		parangon.rightButtonsTexture[377280]:Hide()
 		
 		parangon.leftButtons[55565]:Hide()
 		parangon.leftButtonsTexture[55565]:Hide()
@@ -606,14 +606,14 @@ parangon.NextButton1 = CreateFrame("Button", parangon.NextButton1, parangon.main
 		parangon.rightText[7597]:Hide()
 		parangon.rightButtonsTexture[7597]:Hide()
 		
-		parangon.leftButtons[37728]:Hide()
-		parangon.leftButtonsTexture[37728]:Hide()
-		parangon.leftButtonsArt[37728]:Hide()
-		parangon.centerButtons[37728]:Hide()
-		parangon.centerText[37728]:Hide()
-		parangon.rightButtons[37728]:Hide()
-		parangon.rightText[37728]:Hide()
-		parangon.rightButtonsTexture[37728]:Hide()
+		parangon.leftButtons[377280]:Hide()
+		parangon.leftButtonsTexture[377280]:Hide()
+		parangon.leftButtonsArt[377280]:Hide()
+		parangon.centerButtons[377280]:Hide()
+		parangon.centerText[377280]:Hide()
+		parangon.rightButtons[377280]:Hide()
+		parangon.rightText[377280]:Hide()
+		parangon.rightButtonsTexture[377280]:Hide()
 		
 		parangon.leftButtons[55565]:Hide()
 		parangon.leftButtonsTexture[55565]:Hide()
@@ -765,14 +765,14 @@ parangon.NextButton2 = CreateFrame("Button", parangon.NextButton2, parangon.main
 		parangon.rightText[7597]:Show()
 		parangon.rightButtonsTexture[7597]:Show()
 		
-		parangon.leftButtons[37728]:Show()
-		parangon.leftButtonsTexture[37728]:Show()
-		parangon.leftButtonsArt[37728]:Show()
-		parangon.centerButtons[37728]:Show()
-		parangon.centerText[37728]:Show()
-		parangon.rightButtons[37728]:Show()
-		parangon.rightText[37728]:Show()
-		parangon.rightButtonsTexture[37728]:Show()
+		parangon.leftButtons[377280]:Show()
+		parangon.leftButtonsTexture[377280]:Show()
+		parangon.leftButtonsArt[377280]:Show()
+		parangon.centerButtons[377280]:Show()
+		parangon.centerText[377280]:Show()
+		parangon.rightButtons[377280]:Show()
+		parangon.rightText[377280]:Show()
+		parangon.rightButtonsTexture[377280]:Show()
 		
 		parangon.leftButtons[55565]:Show()
 		parangon.leftButtonsTexture[55565]:Show()
@@ -924,14 +924,14 @@ parangon.NextButton3 = CreateFrame("Button", parangon.NextButton3, parangon.main
 		parangon.rightText[7597]:Hide()
 		parangon.rightButtonsTexture[7597]:Hide()
 		
-		parangon.leftButtons[37728]:Hide()
-		parangon.leftButtonsTexture[37728]:Hide()
-		parangon.leftButtonsArt[37728]:Hide()
-		parangon.centerButtons[37728]:Hide()
-		parangon.centerText[37728]:Hide()
-		parangon.rightButtons[37728]:Hide()
-		parangon.rightText[37728]:Hide()
-		parangon.rightButtonsTexture[37728]:Hide()
+		parangon.leftButtons[377280]:Hide()
+		parangon.leftButtonsTexture[377280]:Hide()
+		parangon.leftButtonsArt[377280]:Hide()
+		parangon.centerButtons[377280]:Hide()
+		parangon.centerText[377280]:Hide()
+		parangon.rightButtons[377280]:Hide()
+		parangon.rightText[377280]:Hide()
+		parangon.rightButtonsTexture[377280]:Hide()
 		
 		parangon.leftButtons[55565]:Hide()
 		parangon.leftButtonsTexture[55565]:Hide()
@@ -1083,14 +1083,14 @@ parangon.NextButton4 = CreateFrame("Button", parangon.NextButton4, parangon.main
 		parangon.rightText[7597]:Hide()
 		parangon.rightButtonsTexture[7597]:Hide()
 		
-		parangon.leftButtons[37728]:Hide()
-		parangon.leftButtonsTexture[37728]:Hide()
-		parangon.leftButtonsArt[37728]:Hide()
-		parangon.centerButtons[37728]:Hide()
-		parangon.centerText[37728]:Hide()
-		parangon.rightButtons[37728]:Hide()
-		parangon.rightText[37728]:Hide()
-		parangon.rightButtonsTexture[37728]:Hide()
+		parangon.leftButtons[377280]:Hide()
+		parangon.leftButtonsTexture[377280]:Hide()
+		parangon.leftButtonsArt[377280]:Hide()
+		parangon.centerButtons[377280]:Hide()
+		parangon.centerText[377280]:Hide()
+		parangon.rightButtons[377280]:Hide()
+		parangon.rightText[377280]:Hide()
+		parangon.rightButtonsTexture[377280]:Hide()
 		
 		parangon.leftButtons[55565]:Hide()
 		parangon.leftButtonsTexture[55565]:Hide()
