@@ -223,16 +223,14 @@ local function OnPlayerLogin(event, player)
 end
 RegisterPlayerEvent(3, OnPlayerLogin)
 
-local function OnPlayerLevelChange(event, player, oldLevel)
-    LoadTalentProgression(player)
-end
-RegisterPlayerEvent(13, OnPlayerLevelChange)
-
 -- PLAYER_EVENT_ON_LEVEL_CHANGE (13) : re-applique les talents enregistrés
 -- en base à chaque montée de niveau. Corrige le cas où les talents
 -- semblaient "réinitialisés" après un level up alors qu'ils étaient
 -- toujours listés dans character_talentspell - LoadTalentProgression est
 -- idempotente (relearn), donc sans risque de doublon ou de perte de points.
+-- (Ce hook était accidentellement dupliqué dans la version en prod -
+-- nettoyé ici : il ne s'exécutait que deux fois pour rien, sans casser
+-- quoi que ce soit, mais autant l'assainir.)
 local function OnPlayerLevelChange(event, player, oldLevel)
     LoadTalentProgression(player)
 end

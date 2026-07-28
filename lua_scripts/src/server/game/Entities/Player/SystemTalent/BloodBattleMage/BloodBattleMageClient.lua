@@ -150,7 +150,22 @@ local fontTalentPointsRemainingText = frameTalentPointsRemaining:CreateFontStrin
 fontTalentPointsRemainingText:SetFont("Fonts\\FRIZQT__.TTF", 14)
 fontTalentPointsRemainingText:SetSize(210, 20)
 fontTalentPointsRemainingText:SetPoint("CENTER", 0, 0)
-fontTalentPointsRemainingText:SetText("|cFFDD1133Talents restants : 0|r")
+
+-- Texte localisé pour "Talents restants" (utilisé ici et dans les deux
+-- fonctions de mise à jour plus bas : UpdateTalentItemCount et
+-- UpdateTalentCountFromBag).
+local talentPointsRemainingLabel
+
+if GetLocale() == "frFR" then
+    talentPointsRemainingLabel = "Talents restants"
+elseif GetLocale() == "enUS" then
+    talentPointsRemainingLabel = "Remaining talents"
+else
+    -- Valeur par défaut en anglais si la langue n'est ni frFR ni enUS
+    talentPointsRemainingLabel = "Remaining talents"
+end
+
+fontTalentPointsRemainingText:SetText("|cFFDD1133" .. talentPointsRemainingLabel .. " : 0|r")
 -------------------------------------------------------------
 
 -- Définir les textes en fonction de la langue locale
@@ -172,21 +187,22 @@ local spellButtons = {}
 BloodbattlemageHandlers.UpdateLearnedTalents = function(player, learnedSpells)
     for handler, learned in pairs(learnedSpells) do
         local button = spellButtons[handler]
-        if button then
-            local learnIndicator = button.learnIndicator or nil
-            local buttonText = button.buttonText or nil
+        if button and button.SetLearned then
+            button.SetLearned(learned)
+        end
+    end
+end
 
-            if learned then
-                -- Marque comme appris
-                button:SetAlpha(1)
-                if learnIndicator then learnIndicator:Show() end
-                if buttonText then buttonText:SetText("|cffffda2b1|r") end
-            else
-                -- Marque comme non appris
-                button:SetAlpha(1)
-                if learnIndicator then learnIndicator:Hide() end
-                if buttonText then buttonText:SetText("|cff1aff1a0|r") end
-            end
+-- Remet TOUS les boutons à zéro (icône + variables internes) après une
+-- réinitialisation complète des talents côté serveur. Le serveur envoie
+-- déjà ce message ("ResetAllButtons") depuis ResetTalents,
+-- mais rien ne l'écoutait côté client : les boutons restaient visuellement
+-- "appris" et, plus grave, restaient bloqués pour tout nouveau clic
+-- jusqu'au prochain rechargement de l'UI (/reload ou reconnexion).
+BloodbattlemageHandlers.ResetAllButtons = function(player)
+    for _, button in pairs(spellButtons) do
+        if button.SetLearned then
+            button.SetLearned(false)
         end
     end
 end
@@ -207,7 +223,7 @@ local function CreateSpellButton(name, texturePath, tooltipText, talentHandler, 
 	-- Stocker le bouton pour pouvoir le mettre à jour plus tard
     spellButtons[talentHandler] = button
 	
-	-- ✅ AJOUT DU CADRE VISUEL SUPERPOSÉ SUR LE BOUTON
+	-- AJOUT DU CADRE VISUEL SUPERPOSÉ SUR LE BOUTON
     local buttonFrame = button:CreateTexture(nil, "OVERLAY")
     buttonFrame:SetTexture("Interface/TALENTFRAME/Template/Button_Talent.blp")
     buttonFrame:SetSize(36, 36)
@@ -220,12 +236,12 @@ learnIndicator:SetTexture("Interface/Buttons/UI-CheckBox-Check")
 learnIndicator:SetSize(30, 30)
 learnIndicator:SetPoint("BOTTOMRIGHT", -2, 2)
 learnIndicator:Hide()
-button.learnIndicator = learnIndicator -- ✅ rendre accessible à l’extérieur
+button.learnIndicator = learnIndicator -- rendre accessible à l’extérieur
 
 -- Texte pour afficher l'état du bouton (0 ou 1)
 local buttonText = button:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 buttonText:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -2, 2)
-button.buttonText = buttonText -- ✅ rendre accessible à l’extérieur
+button.buttonText = buttonText -- rendre accessible à l’extérieur
 
     -- Fonction pour mettre à jour l'état du bouton et de l'indicateur d'apprentissage
     local function UpdateButtonState()
@@ -238,6 +254,17 @@ button.buttonText = buttonText -- ✅ rendre accessible à l’extérieur
             learnIndicator:Hide() -- Cacher l'indicateur d'apprentissage
             buttonText:SetText("|cff1aff1a0|r") -- Mettre à jour le texte pour afficher "0"
         end
+    end
+	
+	-- Permet au code extérieur (confirmation serveur via UpdateLearnedTalents,
+    -- reset complet via ResetAllButtons) de faire correspondre l'état réel du
+    -- bouton - y compris les variables internes talentLearned/buttonClicked
+    -- qui bloquent un nouveau clic - à la vérité serveur, au lieu de ne
+    -- mettre à jour que l'apparence.
+    button.SetLearned = function(learned)
+        talentLearned = learned
+        buttonClicked = learned
+        UpdateButtonState()
     end
 
     -- Fonction à exécuter lorsque le bouton est cliqué
@@ -926,8 +953,8 @@ end
 
 -- Créez le bouton Save à l'intérieur de la fenêtre frameTalentBloodbattlemage
 local saveButton = CreateFrame("Button", "saveButton", frameTalentBloodbattlemage, "UIPanelButtonTemplate")
-saveButton:SetSize(85, 25)
-saveButton:SetPoint("BOTTOMRIGHT", buttonTalentBloodbattlemageClose, "BOTTOMLEFT", -185, 5) -- Place le bouton Save à gauche du bouton Close
+saveButton:SetSize(100, 25)
+saveButton:SetPoint("BOTTOMRIGHT", buttonTalentBloodbattlemageClose, "BOTTOMLEFT", -990, 5) -- Place le bouton Save à gauche du bouton Close
 saveButton:SetText(saveButtonText)
 
 -- Fonction qui prend un screenshot quand le bouton est cliqué
@@ -940,58 +967,29 @@ end)
 --frameTalentBloodbattlemage:Show()
 
 -- Définir les textes en fonction de la langue locale
-local buttonResetText, buttonReloadText
+local buttonResetText
 
 if GetLocale() == "frFR" then
     buttonResetText = "Réinitialiser"
-    buttonReloadText = "Actualiser"
 elseif GetLocale() == "enUS" then
     buttonResetText = "Reset"
-    buttonReloadText = "Reload"
 else
     -- Valeurs par défaut en anglais si la langue n'est ni frFR ni enUS
     buttonResetText = "Reset"
-    buttonReloadText = "Reload"
 end
-
--- Ajoutez une variable pour suivre l'état du bouton Réinitialiser
-local resetButtonClicked = false
 
 -- Créez le bouton Reset à l'intérieur de la fenêtre frameTalentBloodbattlemage
 local buttonReset = CreateFrame("Button", "buttonReset", frameTalentBloodbattlemage, "UIPanelButtonTemplate")
-buttonReset:SetSize(85, 25)
-buttonReset:SetPoint("BOTTOMRIGHT", buttonTalentBloodbattlemageClose, "BOTTOMLEFT", -95, 5) -- Place le bouton Reset à gauche du bouton Reload
+buttonReset:SetSize(100, 25)
+buttonReset:SetPoint("BOTTOMRIGHT", buttonTalentBloodbattlemageClose, "BOTTOMLEFT", -880, 5) -- Place le bouton Reset à gauche du bouton Reload
 buttonReset:SetText(buttonResetText)
 
 local function ResetTalents()
     -- Ajoutez ici la logique pour réinitialiser les talents du joueur
     AIO.Handle("TalentBloodbattlemagespell", "ResetTalents")
-    resetButtonClicked = true -- Marquez le bouton Réinitialiser comme cliqué
 end
 
 buttonReset:SetScript("OnClick", ResetTalents)
-
--- Créez le bouton Reload à l'intérieur de la fenêtre frameTalentBloodbattlemage
-local buttonReload = CreateFrame("Button", "buttonReload", frameTalentBloodbattlemage, "UIPanelButtonTemplate")
-buttonReload:SetSize(85, 25)
-buttonReload:SetPoint("BOTTOMRIGHT", buttonTalentBloodbattlemageClose, "BOTTOMLEFT", -5, 5) -- Place le bouton Reload à gauche du bouton Close
-buttonReload:SetText(buttonReloadText)
-
-local function ReloadClient()
-    -- Ajoutez une vérification pour s'assurer que le bouton Réinitialiser a été cliqué
-    if resetButtonClicked then
-        ReloadUI()
-    else
-        -- Affiche un message informatif si "Réinitialiser" n'a pas été cliqué
-        if GetLocale() == "frFR" then
-            print("|cff00ffffVous ne pouvez <Actualiser> que lorsque vous <Réinitialiser> vos talents.")
-        else
-            print("|cff00ffffYou can only <Reload> after <Resetting> your talents.")
-        end
-    end
-end
-
-buttonReload:SetScript("OnClick", ReloadClient)
 
 -- Ajoutez une variable globale pour suivre l'état de la fenêtre des talents
 local talentsWindowOpen = false
@@ -999,11 +997,9 @@ local talentsWindowOpen = false
 local function OuvrirFermerInterfaceTalents()
     if talentsWindowOpen then
         frameTalentBloodbattlemage:Hide()
-        buttonReload:Hide()
         PlaySoundFile(CLOSE_TALENT_WINDOW_SOUND)
     else
         frameTalentBloodbattlemage:Show()
-        buttonReload:Show()
         PlaySoundFile(OPEN_TALENT_WINDOW_SOUND)
     end
 
@@ -1097,7 +1093,7 @@ end
 -- Affichage des talents restants (items 338404 dans le sac)
 BloodbattlemageHandlers.UpdateTalentItemCount = function(player, count)
     if fontTalentPointsRemainingText then
-        fontTalentPointsRemainingText:SetText("|cFFDD1133Talents restants : " .. count .. "|r")
+        fontTalentPointsRemainingText:SetText("|cFFDD1133" .. talentPointsRemainingLabel .. " : " .. count .. "|r")
     end
 end
 
@@ -1111,7 +1107,7 @@ local TALENT_ITEM_ID = 338404
 local function UpdateTalentCountFromBag()
     local count = GetItemCount(TALENT_ITEM_ID, false, true)
     if fontTalentPointsRemainingText then
-        fontTalentPointsRemainingText:SetText("|cFFDD1133Talents restants : " .. (count or 0) .. "|r")
+        fontTalentPointsRemainingText:SetText("|cFFDD1133" .. talentPointsRemainingLabel .. " : " .. (count or 0) .. "|r")
     end
 end
 
