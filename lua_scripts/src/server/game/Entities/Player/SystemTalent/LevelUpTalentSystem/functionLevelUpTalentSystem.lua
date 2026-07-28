@@ -25,16 +25,18 @@ local function GrantTalentPointsOnLevelUp(event, player, oldLevel)
             player:AddItem(338404, 1)  -- Remplacer par l'ID d'objet correspondant
         end
 
-        -- Détection de la locale du joueur (LOCALE_frFR = 2, sinon on retombe sur enUS)
-        local locale = player:GetSession():GetSessionDbcLocale()
+        -- Détecte la langue du client (index numérique côté serveur Eluna : 0 = enUS, 2 = frFR, etc.)
+        local locale = player:GetDbcLocale()
         local pointWord = pointsToGrant > 1 and "points" or "point"
-        local message
 
-        if locale == LOCALE_frFR then
-            message = "|cff00ff00Vous avez gagné " .. pointsToGrant .. " " .. pointWord .. " de talent pour avoir atteint le niveau " .. level .. "!|r"
-        else
-            message = "|cff00ff00You have gained " .. pointsToGrant .. " talent " .. pointWord .. " for reaching level " .. level .. "!|r"
-        end
+        -- Table des traductions, indexée par LocaleConstant
+        local localizedTexts = {
+            [0] = "|cff00ff00You have gained " .. pointsToGrant .. " talent " .. pointWord .. " for reaching level " .. level .. "!|r",       -- enUS
+            [2] = "|cff00ff00Vous avez gagné " .. pointsToGrant .. " " .. pointWord .. " de talent pour avoir atteint le niveau " .. level .. "!|r", -- frFR
+        }
+
+        -- Récupère le texte correspondant à la langue actuelle ou par défaut en anglais
+        local message = localizedTexts[locale] or localizedTexts[0]
 
         player:SendAreaTriggerMessage(message)
     end
