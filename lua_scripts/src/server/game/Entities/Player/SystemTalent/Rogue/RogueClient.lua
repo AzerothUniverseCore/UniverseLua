@@ -1415,8 +1415,8 @@ end
 
 -- Créez le bouton Save à l'intérieur de la fenêtre frameTalentRogue
 local saveButton = CreateFrame("Button", "saveButton", frameTalentRogue, "UIPanelButtonTemplate")
-saveButton:SetSize(85, 25)
-saveButton:SetPoint("BOTTOMRIGHT", buttonTalentRogueClose, "BOTTOMLEFT", -185, 5) -- Place le bouton Save à gauche du bouton Close
+saveButton:SetSize(100, 25)
+saveButton:SetPoint("BOTTOMRIGHT", buttonTalentRogueClose, "BOTTOMLEFT", -990, 5) -- Place le bouton Save à gauche du bouton Close
 saveButton:SetText(saveButtonText)
 
 -- Fonction qui prend un screenshot quand le bouton est cliqué
@@ -1442,8 +1442,8 @@ end
 
 -- Créez le bouton Reset à l'intérieur de la fenêtre frameTalentRogue
 local buttonReset = CreateFrame("Button", "buttonReset", frameTalentRogue, "UIPanelButtonTemplate")
-buttonReset:SetSize(85, 25)
-buttonReset:SetPoint("BOTTOMRIGHT", buttonTalentRogueClose, "BOTTOMLEFT", -5, 5) -- Place le bouton Reset à gauche du bouton Close
+buttonReset:SetSize(100, 25)
+buttonReset:SetPoint("BOTTOMRIGHT", buttonTalentRogueClose, "BOTTOMLEFT", -880, 5) -- Place le bouton Reset à gauche du bouton Reload
 buttonReset:SetText(buttonResetText)
 
 local function ResetTalents()

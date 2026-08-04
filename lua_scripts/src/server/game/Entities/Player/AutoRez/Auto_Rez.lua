@@ -1,6 +1,6 @@
 local SPELL_ID = 51916 -- Sort qui invoque le PNJ pour ressusciter
-local MAX_RESS = 3 -- Nombre maximum de résurrections
-local RESS_TIMER = 10800 -- 3 heures (en secondes) avant de récupérer les résurrections
+local MAX_RESS = 10 -- Nombre maximum de résurrections
+local RESS_TIMER = 1800 -- 30 minutes (en secondes) avant de récupérer les résurrections
 
 local playerRessData = {} -- Stocke les résurrections des joueurs
 
@@ -12,7 +12,7 @@ function OnPlayerLogin(event, player)
         playerRessData[guid] = {count = MAX_RESS, lastReset = os.time()}
     end
 
-    -- Vérifie si le timer des 3 heures est écoulé pour réinitialiser les résurrections
+    -- Vérifie si le timer des 30 minutes est écoulé pour réinitialiser les résurrections
     if os.time() - playerRessData[guid].lastReset >= RESS_TIMER then
         playerRessData[guid].count = MAX_RESS
         playerRessData[guid].lastReset = os.time()

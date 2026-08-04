@@ -3,7 +3,7 @@ local QUEST_DISCIPLE_CHALLENGE = 58209
 
 local FACTION_HOSTILE = 15
 local FACTION_FRIENDLY = 2104
-local LOW_HEALTH_PERCENT = 20
+local LOW_HEALTH_PERCENT = 50
 local STABLE_HEALTH_PERCENT = 100
 
 -- Table pour suivre les créatures qui se sont déjà rendues
