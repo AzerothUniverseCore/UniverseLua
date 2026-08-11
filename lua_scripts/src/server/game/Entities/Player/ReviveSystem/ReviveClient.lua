@@ -9,6 +9,32 @@ local REVIVE_HANDLER_NAME = "Revive"
 local ReviveHandlers = AIO.AddHandlers(REVIVE_HANDLER_NAME, {})
 
 ----------------------------------------------------------------------------
+-- Localisation (frFR / enUS)
+----------------------------------------------------------------------------
+local LOCALES = {
+    frFR = {
+        TITLE          = "Vous avez succombé",
+        DESC           = "Ressusciter sur place.",
+        CHARGES_LEFT   = "Résurrections restantes : %d/%d\nRéinitialisation dans %s",
+        NO_CHARGE_LEFT = "Plus de résurrection disponible\nProchaine dans %s",
+        NO_CHARGE_MSG  = "Plus de résurrection disponible pour le moment.",
+        AVAILABLE      = "Disponible",
+        BTN_REVIVE     = "Ressusciter",
+    },
+    enUS = {
+        TITLE          = "You are dead",
+        DESC           = "Resurrect immediately on the spot.",
+        CHARGES_LEFT   = "Resurrections remaining: %d/%d\nResets in %s",
+        NO_CHARGE_LEFT = "No resurrection available\nNext in %s",
+        NO_CHARGE_MSG  = "No resurrection available right now.",
+        AVAILABLE      = "available",
+        BTN_REVIVE     = "Resurrect",
+    },
+}
+
+local L = LOCALES[GetLocale()] or LOCALES.enUS
+
+----------------------------------------------------------------------------
 -- Etat local (mis a jour par le serveur)
 ----------------------------------------------------------------------------
 local currentCharges   = 0
@@ -20,7 +46,7 @@ local lastUpdateClock  = 0
 -- Construction de l'interface
 ----------------------------------------------------------------------------
 local frame = CreateFrame("Frame", "ReviveFrame", UIParent)
-frame:SetSize(280, 200)
+frame:SetSize(280, 150)
 frame:SetPoint("CENTER", UIParent, "CENTER", 0, 80)
 frame:SetFrameStrata("DIALOG")
 frame:SetToplevel(true)
@@ -41,12 +67,12 @@ frame:SetBackdrop({
 
 local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
 title:SetPoint("TOP", frame, "TOP", 0, -18)
-title:SetText("Vous etes mort")
+title:SetText(L.TITLE)
 
 local desc = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 desc:SetPoint("TOP", title, "BOTTOM", 0, -10)
 desc:SetWidth(240)
-desc:SetText("Ressuscitez immediatement sur place ou rendez l'esprit pour rejoindre votre corps a pied.")
+desc:SetText(L.DESC)
 
 local status = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 status:SetPoint("TOP", desc, "BOTTOM", 0, -12)
@@ -54,13 +80,8 @@ status:SetWidth(240)
 
 local reviveButton = CreateFrame("Button", "ReviveButton", frame, "UIPanelButtonTemplate")
 reviveButton:SetSize(160, 30)
-reviveButton:SetPoint("BOTTOM", frame, "BOTTOM", 0, 42)
-reviveButton:SetText("Ressusciter")
-
-local repopButton = CreateFrame("Button", "ReviveRepopButton", frame, "UIPanelButtonTemplate")
-repopButton:SetSize(160, 24)
-repopButton:SetPoint("TOP", reviveButton, "BOTTOM", 0, -2)
-repopButton:SetText("Rendre l'esprit")
+reviveButton:SetPoint("BOTTOM", frame, "BOTTOM", 0, 20)
+reviveButton:SetText(L.BTN_REVIVE)
 
 frame:Hide()
 
@@ -69,7 +90,7 @@ frame:Hide()
 ----------------------------------------------------------------------------
 local function FormatTime(seconds)
     if seconds <= 0 then
-        return "disponible"
+        return L.AVAILABLE
     end
     local m = math.floor(seconds / 60)
     local s = seconds % 60
@@ -81,10 +102,10 @@ local function RefreshStatusText()
     local remaining = math.max(0, nextResetSeconds - elapsed)
 
     if currentCharges > 0 then
-        status:SetText(string.format("Resurrections restantes : %d/%d\nReinitialisation dans %s", currentCharges, maxCharges, FormatTime(remaining)))
+        status:SetText(string.format(L.CHARGES_LEFT, currentCharges, maxCharges, FormatTime(remaining)))
         reviveButton:Enable()
     else
-        status:SetText(string.format("Plus de resurrection disponible\nProchaine dans %s", FormatTime(remaining)))
+        status:SetText(string.format(L.NO_CHARGE_LEFT, FormatTime(remaining)))
         reviveButton:Disable()
     end
 end
@@ -113,20 +134,15 @@ function ReviveHandlers.ReviveResult(player, success, reason)
     if success then
         frame:Hide()
     elseif reason == "NO_CHARGES" then
-        status:SetText("Plus de resurrection disponible pour le moment.")
+        status:SetText(L.NO_CHARGE_MSG)
     end
 end
 
 ----------------------------------------------------------------------------
--- Boutons
+-- Bouton
 ----------------------------------------------------------------------------
 reviveButton:SetScript("OnClick", function()
     AIO.Handle(REVIVE_HANDLER_NAME, "RequestRevive")
-end)
-
-repopButton:SetScript("OnClick", function()
-    frame:Hide()
-    RepopMe()
 end)
 
 ----------------------------------------------------------------------------
