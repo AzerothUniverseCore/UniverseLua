@@ -1,9 +1,16 @@
 -- Script Lua pour TrinityCore 3.3.5
--- Vérifie régulièrement si le joueur perd le buff "Forme Dracthyr" (ID 320555)
--- Si oui, retire "Survoler" (ID 320556)
+-- Vérifie régulièrement l'état du buff "Forme Dracthyr" (ID 320555) :
+--   - tant qu'il est actif, accorde "Survoler" (ID 320556) et "Vol" (ID 320570)
+--   - dès qu'il disparaît, retire les deux
 
 local BUFF_FORME_DRACTHYR = 320555
 local SPELL_SURVOLER = 320556
+local SPELL_VOL = 320570 -- Envol, +350% vitesse de vol en forme Dracthyr
+
+-- Auras qui doivent exister UNIQUEMENT tant que la forme Dracthyr est
+-- active : accordées si elle est présente, retirées si elle ne l'est plus
+-- (ajoute d'autres IDs ici si besoin).
+local DEPENDENT_AURAS = { SPELL_SURVOLER, SPELL_VOL }
 
 -- Fonction appelée périodiquement pour tous les joueurs
 function CheckAuras(event, delay, repeats, player)
@@ -12,20 +19,28 @@ function CheckAuras(event, delay, repeats, player)
         return
     end
 
-    -- Vérifie si le joueur n'a plus l'aura "Forme Dracthyr"
-    if not player:HasAura(BUFF_FORME_DRACTHYR) then
-        -- Vérifie si le joueur a encore l'aura "Survoler"
-        if player:HasAura(SPELL_SURVOLER) then
-            -- Retire l'aura "Survoler"
-            player:RemoveAura(SPELL_SURVOLER)
+    if player:HasAura(BUFF_FORME_DRACTHYR) then
+        -- Toujours en forme Dracthyr : s'assure que les auras dépendantes
+        -- sont bien présentes (les accorde si elles manquent).
+        for _, spellId in ipairs(DEPENDENT_AURAS) do
+            if not player:HasAura(spellId) then
+                player:AddAura(spellId, player)
+            end
+        end
+    else
+        -- Plus en forme Dracthyr : retire toutes les auras qui en dépendent.
+        for _, spellId in ipairs(DEPENDENT_AURAS) do
+            if player:HasAura(spellId) then
+                player:RemoveAura(spellId)
+            end
         end
     end
 end
 
--- Enregistrement de la vérification pour chaque joueur, toutes les 2 secondes
+-- Enregistrement de la vérification pour chaque joueur, toutes les secondes
 function StartAuraCheck(event, player)
     -- Lance une vérification périodique des auras pour ce joueur
-    player:RegisterEvent(CheckAuras, 1000, 0) -- 1000ms = 2 secondes, 0 = répétition infinie
+    player:RegisterEvent(CheckAuras, 1000, 0) -- 1000ms = 1 seconde, 0 = répétition infinie
 end
 
 -- Supprime la vérification si le joueur se déconnecte
