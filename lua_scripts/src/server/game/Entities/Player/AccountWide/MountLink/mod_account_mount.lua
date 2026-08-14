@@ -431,6 +431,7 @@ local CommonMountList =	{	17481,	-- Rivendare's Deathcharger
                             180139,
                             180140,
 							150305,
+							93326,
 							};
 				
 local AllianceMountList = {	470,	-- Black Stallion					#Alliance

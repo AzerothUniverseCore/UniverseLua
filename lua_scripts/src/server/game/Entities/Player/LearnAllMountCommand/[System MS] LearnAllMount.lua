@@ -441,6 +441,7 @@ local mountSpells = {
     180139,
     180140,
     150305,
+	93326,
     470,	-- Black Stallion					#Alliance
     6896,	-- Black Ram						#Alliance
     10969,	-- Blue Mechanostrider				#Alliance

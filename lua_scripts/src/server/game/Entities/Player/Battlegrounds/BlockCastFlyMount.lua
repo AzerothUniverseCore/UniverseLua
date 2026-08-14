@@ -194,6 +194,8 @@ local FORBIDDEN_SPELLS = {
 [75596] = true,
 [61309] = true,
 [636218] = true,
+[93326] = true,
+[320570] = true,
 [294197] = true} -- Liste des sorts interdits
 
 local RESTRICTED_MAPS = { 
