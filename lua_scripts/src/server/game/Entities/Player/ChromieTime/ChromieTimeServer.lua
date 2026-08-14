@@ -1,15 +1,15 @@
 local AIO = AIO or require("AIO")
 
 local DESTINATIONS = {
-    { "Orgrimmar",                     1,   1517.55,     -4412.03,     21.7103,   0.243466, nameEn = "Orgrimmar",                          faction = "Horde" },
-    { "Sanctuaire des Deux-Lunes",     754, 1678.38,     931.508,      471.425,   0.143189, nameEn = "Shrine of Two Moons",                faction = "Horde" },
-    { "Hurlevent",                     0,   -8905,       560,          94,        0.62,     nameEn = "Stormwind",                          faction = "Alliance" },
-    { "Sanctuaire des Sept-Etoiles",   754, 821.866,     253.792,      503.92,    3.73811,  nameEn = "Shrine of Seven Stars",              faction = "Alliance" },
-    { "Dalaran",                       571, 5826,        470,          659,       1.4,      nameEn = "Dalaran" },
-    { "Dalaran (Legion)",   		   781, -11908.80,   2961.10,      1857.40,   5.04,     nameEn = "Dalaran (Legion)" },
-    { "Les Ports Oublies",  		   807, 11742.5,     11860.6,      -0.169944, 4.85993,  nameEn = "The Forgotten Ports" },
-    { "Netheril",    		   		   725, -14749.907227,-13192.527344,34.431049,1.896851, nameEn = "Netheril" },
-    { "Chemin du Reve d'emeraude", 	   792, 1658.18,     1573.7,       5.84094,   2.46316,  nameEn = "Path of the Emerald Dream" },
+    { "Orgrimmar",                     1,   1517.55,     -4412.03,     21.7103,   0.243466, nameEn = "Orgrimmar",                          faction = "Horde",    requiredLevel = 1 },
+    { "Sanctuaire des Deux-Lunes",     754, 1678.38,     931.508,      471.425,   0.143189, nameEn = "Shrine of Two Moons",                faction = "Horde",    requiredLevel = 80 },
+    { "Hurlevent",                     0,   -8905,       560,          94,        0.62,     nameEn = "Stormwind",                          faction = "Alliance", requiredLevel = 1 },
+    { "Sanctuaire des Sept-Etoiles",   754, 821.866,     253.792,      503.92,    3.73811,  nameEn = "Shrine of Seven Stars",              faction = "Alliance", requiredLevel = 80 },
+    { "Dalaran",                       571, 5826,        470,          659,       1.4,      nameEn = "Dalaran",                                                  requiredLevel = 80 },
+    { "Dalaran (Legion)",   		   781, -11908.80,   2961.10,      1857.40,   5.04,     nameEn = "Dalaran (Legion)",                                         requiredLevel = 80 },
+    { "Les Ports Oubliés",  		   807, 11742.5,     11860.6,      -0.169944, 4.85993,  nameEn = "The Forgotten Reach",                                      requiredLevel = 10 },
+    { "Netheril",    		   		   725, -14749.907227,-13192.527344,34.431049,1.896851, nameEn = "Netheril",                                                 requiredLevel = 80 },
+    { "Chemin du Rêve d'émeraude", 	   792, 1658.18,     1573.7,       5.84094,   2.46316,  nameEn = "Emerald Dreamway",                                	 	 requiredLevel = 80 },
 }
 
 local function PDF_PlayerFaction(player)
@@ -24,18 +24,20 @@ end
 
 local SERVER_LOCALES = {
     frFR = {
-        teleported          = "Vous avez ete teleporte vers %s.",
-        recalled            = "Vous etes revenu a votre position precedente.",
-        noRecall            = "Aucune position de retour enregistree.",
+        teleported          = "Vous avez été teleporté vers %s.",
+        recalled            = "Vous êtes revenu à votre position précédente.",
+        noRecall            = "Aucune position de retour enregistrée.",
         invalidDestination  = "Destination invalide.",
-        cooldown            = "Veuillez patienter avant de reutiliser la Pierre de Foyer.",
+        cooldown            = "Veuillez patienter avant de reutiliser Le temps de Chromie.",
+        levelTooLow         = "Vous devez être niveau %d pour voyager vers %s.",
     },
     enUS = {
         teleported          = "You have been teleported to %s.",
         recalled            = "You have been returned to your previous location.",
         noRecall            = "No recall position saved.",
         invalidDestination  = "Invalid destination.",
-        cooldown            = "Please wait before using the Hearthstone again.",
+        cooldown            = "Please wait before using the Chromie Time again.",
+        levelTooLow         = "You must be level %d to travel to %s.",
     },
 }
 
@@ -139,6 +141,15 @@ AIO.AddHandlers("PierreFoyer", {
 
         if dest.faction and dest.faction ~= PDF_PlayerFaction(player) then
             AIO.Handle(player, "PierreFoyer", "Result", msg.invalidDestination, 1, 0.2, 0.2)
+            return
+        end
+
+        -- Le client masque/grise deja les destinations trop hautes pour
+        -- le niveau du joueur, mais on ne fait jamais confiance au client :
+        -- verification refaite ici, cote serveur, avant toute teleportation.
+        if dest.requiredLevel and player:GetLevel() < dest.requiredLevel then
+            local text = string.format(msg.levelTooLow, dest.requiredLevel, PDF_DestName(guid, dest))
+            AIO.Handle(player, "PierreFoyer", "Result", text, 1, 0.2, 0.2)
             return
         end
 
