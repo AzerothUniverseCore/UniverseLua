@@ -741,10 +741,21 @@ local function BMAH_FlushLogic()
                 ))
                 local itemName = wq and wq:GetString(0) or ("Item#"..itemEntry)
                 local bidGold  = math.floor(bidCopper / (COPPER_PER_SILVER * SILVER_PER_GOLD))
-                local body     = string.format(FlushMailBody, bidGold, itemName)
+
+                -- FIX: FlushMailSubject/FlushMailBody were never declared
+                -- anywhere in this file (leftover from before mail text was
+                -- localized) - string.format(FlushMailBody, ...) always
+                -- received nil as its format string, crashing with "bad
+                -- argument #1 to 'format' (string expected, got nil)" every
+                -- time an expired auction with a winning bidder got flushed.
+                -- Reuses the same per-recipient WIN_SUBJECT/WIN_BODY locale
+                -- strings as the manual flush handler above (same event:
+                -- notifying the winner of an expired auction).
+                local winL = BMAH_LocaleFor(buyerId)
+                local body = string.format(winL.WIN_BODY, bidGold, itemName)
 
                 SendMail(
-                    FlushMailSubject,
+                    winL.WIN_SUBJECT,
                     body,
                     buyerId,
                     FlushMailSender,
