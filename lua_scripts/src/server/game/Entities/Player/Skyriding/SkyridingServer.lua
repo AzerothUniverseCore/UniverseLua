@@ -20,10 +20,28 @@ local SURGE_COOLDOWN_MS   = 600            -- anti-spam entre deux clics Ruee (m
 -- changement de cran a un effet mesurable sur la vitesse calculee).
 local MOVE_FLIGHT = 6
 
+-- Effet de vent + impulsion (voir vigor_surge_wind_screen_effect.sql pour le
+-- sort custom 999521 - un SPELL_AURA_SCREEN_EFFECT copie d'Essence de sang
+-- [300050], aucun effet de jeu reel. Les tentatives via SpellVisual seul
+-- [Typhoon 999520, puis Cyclone] rendaient des ronds au sol pas convaincants
+-- - le screen effect enveloppe tout l'ecran, plus proche d'un coup de vent).
+local WIND_FX_ENABLED  = true
+local WIND_FX_SPELL_ID = 999521   -- sort custom, purement visuel (screen effect)
+local IMPULSE_ENABLED  = true
+local IMPULSE_DISTANCE = 15       -- yards projetes devant le joueur
+local IMPULSE_Z_SPEED  = 8        -- vitesse verticale du MoveJump (arc leger)
+
 -- DEBUG : affiche dans le chat du joueur ce que le script fait.
 local DEBUG = false
 ----------------------------------------------------------------------------
 
+-- Liste generee automatiquement depuis spell_dbc.sql : TOUS les sorts de
+-- monture volante du serveur (78=MOUNTED + 207/208=vitesse de vol).
+-- La detection se fait en testant player:HasAura(id) pour chacun jusqu'a
+-- trouver celui actuellement actif (le displayId de spell_dbc ne correspond
+-- pas toujours au vrai modele affiche sur les sorts custom, donc on ne
+-- devine plus via GetDisplayId() - on verifie directement l'aura).
+-- 308 sorts au total.
 local ALL_FLYING_MOUNT_SPELLS = {
     3363,31700,32235,32239,32240,32242,32243,32244,32245,32246,32289,32290,32292,32295,32296,
     32297,32345,37015,39798,39800,39801,39802,39803,40192,40212,41513,41514,41515,41516,41517,
@@ -143,6 +161,32 @@ local function ApplySurgeStack(player, state)
         okAfter and string.format("%.4f", after) or "ERR"))
 
     state.appliedStack = desired
+end
+
+-- Joue l'effet de vent (sort custom 999520, purement visuel, aucun impact
+-- sur le jeu) + applique une impulsion vers l'avant via MoveJump(), projetee
+-- selon l'orientation actuelle du joueur. Appele une fois par Ruee reussie.
+local function DoWindAndImpulse(player)
+    if WIND_FX_ENABLED then
+        pcall(function() player:CastSpell(player, WIND_FX_SPELL_ID, true) end)
+    end
+
+    if IMPULSE_ENABLED then
+        local okPos, x, y, z, o = pcall(function()
+            return player:GetX(), player:GetY(), player:GetZ(), player:GetOrientation()
+        end)
+        if okPos and x then
+            local destX = x + IMPULSE_DISTANCE * math.cos(o)
+            local destY = y + IMPULSE_DISTANCE * math.sin(o)
+            local destZ = z
+            local okJump = pcall(function() player:MoveJump(destX, destY, destZ, IMPULSE_Z_SPEED) end)
+            DebugMsg(player, string.format(
+                "Vigor Surge (impulsion) : de (%.1f,%.1f,%.1f) o=%.2f vers (%.1f,%.1f,%.1f) zSpeed=%.1f | MoveJump ok=%s",
+                x, y, z, o, destX, destY, destZ, IMPULSE_Z_SPEED, tostring(okJump)))
+        else
+            DebugMsg(player, "Vigor Surge (impulsion) : position/orientation illisible - impulsion annulee.")
+        end
+    end
 end
 
 ----------------------------------------------------------------------------
@@ -292,6 +336,8 @@ function DragonRidingHandlers.RequestSurge(player)
     state.activeStacks = math.min(VIGOR_MAX_CHARGES, state.activeStacks + 1)
     -- applique immediatement le nouveau cran (SetStackAmount sur l'aura deja active)
     ApplySurgeStack(player, state)
+    -- effet de vent + impulsion vers l'avant
+    DoWindAndImpulse(player)
 
     AIO.Handle(player, DR_CLIENT_HANDLER, "SurgeResult", true)
     AIO.Handle(player, DR_CLIENT_HANDLER, "Update", state.charges, VIGOR_MAX_CHARGES)
