@@ -2,7 +2,7 @@ local ITEM_ID = 132747 -- Remplacez par l'ID réel de l'item
 
 local function OnGossipHello(event, player, item)
     local accountId = player:GetAccountId()
-    local query = string.format("SELECT rank FROM auc_eluna.mod_account_rank WHERE accountID = %d", accountId)
+    local query = string.format("SELECT `rank` FROM auc_eluna.mod_account_rank WHERE accountID = %d", accountId)
     local result = CharDBQuery(query)
     
     if result and result:GetInt32(0) == 1 then
@@ -15,7 +15,7 @@ local function OnGossipHello(event, player, item)
 end
 
 local function DelayedUpdate(eventId, delay, repeats, accountId)
-    local query1 = string.format("UPDATE auc_eluna.mod_account_rank SET rank = 1 WHERE accountID = %d", accountId)
+    local query1 = string.format("UPDATE auc_eluna.mod_account_rank SET `rank` = 1 WHERE accountID = %d", accountId)
     local query2 = string.format("INSERT INTO auc_chars.premium (AccountId, active) VALUES (%d, 1) ON DUPLICATE KEY UPDATE active = 1", accountId)
     
     CharDBExecute(query1)
