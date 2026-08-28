@@ -33,7 +33,7 @@ local talents = {
 	["spellsuddendoom"] = {spellID = 49530, itemID = 338404},
 	["spellvampiricblood"] = {spellID = 55233, itemID = 338404},
 	["spellwillofthenecropolis"] = {spellID = 50150, itemID = 338404},
-	["spellheartstrike"] = {spellID = 55050, itemID = 338404},
+	["spellheartstriks"] = {spellID = 55050, itemID = 338404},
 	["spellmightofmograine"] = {spellID = 49534, itemID = 338404},
 	["spellbloodgorged"] = {spellID = 61158, itemID = 338404},
 	["spelldancingruneweapon"] = {spellID = 49028, itemID = 338404},

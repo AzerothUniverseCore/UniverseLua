@@ -17,7 +17,7 @@ local function onUseParcho(event, player, item)
   local iEntry = item:GetEntry();
   local pLevel = player:GetLevel();
 
-    if (pLevel <= 79) then
+    if (pLevel <= 89) then
         onReceiveExp(event, player, amount, victim);
         player:RemoveItem( IdItem, 1);
     else
