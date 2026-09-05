@@ -439,6 +439,9 @@ local function GetDungeonByMap(mapId)
 end
 
 local function GetTimeRemaining(run)
+    if not run.startTime then
+        return run.timer
+    end
     return math.max(0, run.timer - (os.time() - run.startTime))
 end
 
