@@ -1,14 +1,15 @@
 local CONSTANT = {
     EVENT = {
         PLAYER = {
+            [3]  = "OnLoginEvent", -- OnLogin
             [27] = "OnZoneEvent", -- OnZoneChange
-            [28] = "OnMapEvent",  -- OnMapEvent
-            [29] = "OnItemEvent", -- OnLootItem
-            [32] = "OnItemEvent", -- OnEquipItem
-            [47] = "OnAreaEvent", -- OnAreaItem
-            [51] = "OnItemEvent", -- OnQuestRewardItem
-            [52] = "OnItemEvent", -- OnCreateItem
-            [53] = "OnItemEvent", -- OnStoreItem
+            [28] = "OnMapEvent",  -- OnMapChange
+            [29] = "OnItemEvent", -- OnEquipItem (PLAYER_EVENT_ON_EQUIP)
+            [32] = "OnItemEvent", -- OnLootItem (PLAYER_EVENT_ON_LOOT_ITEM)
+            [47] = "OnAreaEvent", -- OnAreaChange
+            [51] = "OnItemEvent", -- OnQuestRewardItem (INACTIF - evenement non implemente)
+            [52] = "OnItemEvent", -- OnCreateItem (INACTIF - evenement non implemente)
+            [53] = "OnItemEvent", -- OnStoreItem (INACTIF - evenement non implemente)
             [56] = "OnItemEvent", -- OnRollRewardItem
          -- [58] = "OnAuraApply", -- OnAuraApply
         },
@@ -90,6 +91,7 @@ local SOURCE_TYPE = {
 }
 
 local Spell_Bonus_Action = { }
+
 function Spell_Bonus_Action.CheckConditions(player, conditions)
     for _, condition in ipairs(conditions) do
         local func = SOURCE_TYPE[condition.source_type]
@@ -138,6 +140,10 @@ function Spell_Bonus_Action.Verification_Event(event_id, delay, repeats, player)
 end
 
 function Spell_Bonus_Action.OnItemEvent(event, player, item, count)
+    if not item then
+        return
+    end
+
     local item_id = item:GetItemTemplate():GetItemId()
     local spell_id = Entity.items[item_id]
 
@@ -150,6 +156,25 @@ function Spell_Bonus_Action.OnItemEvent(event, player, item, count)
         })
         Spell_Bonus_Action.HandleEvent(player, data)
     end
+end
+
+function Spell_Bonus_Action.OnLoginEvent(event, player)
+    player:RegisterEvent(function(eventId, delay, repeats, ply)
+        if not ply or not ply:IsInWorld() then
+            return
+        end
+
+        for spell_id, data in pairs(Entity.spells) do
+            if Spell_Bonus_Action.CheckConditions(ply, data.conditions) then
+                ply:SetData(CONSTANT.DATA, {
+                    spell_id = spell_id,
+                    frame_show = false,
+                })
+                Spell_Bonus_Action.HandleEvent(ply, data)
+                break
+            end
+        end
+    end, 3000, 1)
 end
 
 function Spell_Bonus_Action.OnMapEvent(event, player)
