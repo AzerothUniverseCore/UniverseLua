@@ -195,6 +195,7 @@ local FORBIDDEN_SPELLS = {
 [61309] = true,
 [636218] = true,
 [93326] = true,
+[320555] = true,
 [320570] = true,
 [294197] = true} -- Liste des sorts interdits
 
@@ -336,6 +337,7 @@ local RESTRICTED_MAPS = {
 [859] = true,
 [860] = true,
 [861] = true,
+[865] = true,
 [974] = true} -- Maps interdites
 
 -- Vérifie si le joueur est dans une zone interdite
