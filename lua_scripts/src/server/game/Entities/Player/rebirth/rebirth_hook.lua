@@ -374,6 +374,91 @@ local function LoadRebirthFromDB(player)
     return rebirth
 end
 
+local EMPYREAN_DOMAIN_MAP_ID = 865
+local DEFAULT_PHASE_MASK = 1
+
+-- _G table (see module header : one Lua state per map under Eluna) tracking
+-- which players currently sit in a phase WE set for the Empyrean Domain, so
+-- the map-change hook only ever resets a phase it applied itself and never
+-- clobbers some other custom system's own PhaseMask usage on an unrelated
+-- map transition.
+_G.RebirthEmpyreanPhaseState = _G.RebirthEmpyreanPhaseState or {}
+
+---
+--- Computes the Empyrean Domain PhaseMask bit for a given Rebirth level :
+--- level 2 -> phase 2, level 3 -> phase 4, level 4 -> phase 8, etc.
+--- (phase = 2^(level-1), one distinct bit per Rebirth tier). REBIRTH_LEVEL_CAP
+--- (30 by default) stays far under the 32 bits of a PhaseMask.
+---
+--- @param rebirth_level The account's current Rebirth level
+--- @return uint32 The PhaseMask bit for that level
+---
+local function GetEmpyreanDomainPhaseMask(rebirth_level)
+    rebirth_level = tonumber(rebirth_level) or 1
+    if rebirth_level < 1 then
+        rebirth_level = 1
+    end
+
+    return 2 ^ (rebirth_level - 1)
+end
+
+---
+--- Applies the Empyrean Domain phase matching `rebirth_level` to `player` and
+--- remembers that WE set it, so ResetEmpyreanDomainPhaseIfNeeded knows to
+--- revert it later.
+---
+local function ApplyEmpyreanDomainPhase(player, rebirth_level)
+    local ok, guid_low = pcall(function() return player:GetGUIDLow() end)
+    if not ok or not guid_low then
+        return
+    end
+
+    local ok2 = pcall(function()
+        player:SetPhaseMask(GetEmpyreanDomainPhaseMask(rebirth_level), true)
+    end)
+    if ok2 then
+        _G.RebirthEmpyreanPhaseState[guid_low] = true
+    end
+end
+
+---
+--- Resets `player` back to the default PhaseMask (1) if — and only if — a
+--- previous ApplyEmpyreanDomainPhase call is the one that changed it.
+---
+local function ResetEmpyreanDomainPhaseIfNeeded(player)
+    local ok, guid_low = pcall(function() return player:GetGUIDLow() end)
+    if not ok or not guid_low then
+        return
+    end
+
+    if not _G.RebirthEmpyreanPhaseState[guid_low] then
+        return
+    end
+
+    pcall(function() player:SetPhaseMask(DEFAULT_PHASE_MASK, true) end)
+    _G.RebirthEmpyreanPhaseState[guid_low] = nil
+end
+
+---
+--- Applies or reverts the Empyrean Domain phase for `player` based on the
+--- map they are CURRENTLY on, using `rebirth`'s level when one is available
+--- (falls back to level 1 otherwise, which never grants access anyway since
+--- TriggerProofTeleport itself requires level >= 2 for every entry).
+---
+local function SyncEmpyreanDomainPhase(player, rebirth)
+    local ok, map_id = pcall(function() return player:GetMapId() end)
+    if not ok or not map_id then
+        return
+    end
+
+    if map_id == EMPYREAN_DOMAIN_MAP_ID then
+        local level = (rebirth and rebirth:GetLevel()) or 1
+        ApplyEmpyreanDomainPhase(player, level)
+    else
+        ResetEmpyreanDomainPhaseIfNeeded(player)
+    end
+end
+
 -- ============================================================================
 -- PLAYER EXPERIENCE MANAGEMENT
 -- ============================================================================
@@ -947,6 +1032,10 @@ local function TriggerProofTeleport(player, level, proof_id)
     player:Teleport(entry.map, entry.x, entry.y, entry.z, entry.o)
     Notify(player, "TELEPORT_SUCCESS", proof_id)
 
+    if entry.map == EMPYREAN_DOMAIN_MAP_ID then
+        ApplyEmpyreanDomainPhase(player, level)
+    end
+
     return true
 end
 
@@ -1139,6 +1228,8 @@ function Hook.OnPlayerLogin(event, player)
         defaults = { rebirth }
     })
 
+    SyncEmpyreanDomainPhase(player, rebirth)
+
     OnRebirthClientLoadRequest(player)
 
     Mediator.On("OnAfterPlayerRebirthLoad", {
@@ -1194,6 +1285,19 @@ function Hook.OnPlayerSave(event, player)
     end
 
     rebirth:SaveSync()
+end
+
+function Hook.OnPlayerMapChange(event, player)
+    if not player then
+        return
+    end
+
+    local rebirth = CacheGet(player)
+    if not rebirth then
+        rebirth = LoadRebirthSync(player)
+    end
+
+    SyncEmpyreanDomainPhase(player, rebirth)
 end
 
 -- ============================================================================
@@ -1299,6 +1403,7 @@ RegisterPlayerEvent(3, Hook.OnPlayerLogin)
 RegisterPlayerEvent(4, Hook.OnPlayerLogout)
 RegisterPlayerEvent(7, Hook.OnPlayerKillCreature)
 RegisterPlayerEvent(26, Hook.OnPlayerSave)  -- on_save : sauvegarde periodique + pre-logout
+RegisterPlayerEvent(28, Hook.OnPlayerMapChange)  -- Domaine Empyreen phasing (map 865)
 RegisterPlayerEvent(45, Hook.OnPlayerAchievementComplete)
 RegisterPlayerEvent(54, Hook.OnPlayerQuestComplete)  -- on_quest_status_changed : filtre sur status == 6
 
