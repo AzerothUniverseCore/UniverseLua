@@ -18,6 +18,7 @@ local LOCALES = {
         CHARGES_LEFT   = "Résurrections restantes : %d/%d\nRéinitialisation dans %s",
         NO_CHARGE_LEFT = "Plus de résurrection disponible\nProchaine dans %s",
         NO_CHARGE_MSG  = "Plus de résurrection disponible pour le moment.",
+        NO_REVIVE_BG_ARENA = "Impossible de ressusciter depuis un champ de bataille ou une arène.",
         AVAILABLE      = "Disponible",
         BTN_REVIVE     = "Ressusciter",
     },
@@ -27,6 +28,7 @@ local LOCALES = {
         CHARGES_LEFT   = "Resurrections remaining: %d/%d\nResets in %s",
         NO_CHARGE_LEFT = "No resurrection available\nNext in %s",
         NO_CHARGE_MSG  = "No resurrection available right now.",
+        NO_REVIVE_BG_ARENA = "You cannot resurrect from a battleground or arena.",
         AVAILABLE      = "available",
         BTN_REVIVE     = "Resurrect",
     },
@@ -135,6 +137,9 @@ function ReviveHandlers.ReviveResult(player, success, reason)
         frame:Hide()
     elseif reason == "NO_CHARGES" then
         status:SetText(L.NO_CHARGE_MSG)
+    elseif reason == "BG_ARENA" then
+        status:SetText(L.NO_REVIVE_BG_ARENA)
+        reviveButton:Disable()
     end
 end
 
@@ -154,6 +159,11 @@ watcher:RegisterEvent("PLAYER_ALIVE")
 watcher:RegisterEvent("PLAYER_UNGHOST")
 watcher:SetScript("OnEvent", function(self, event)
     if event == "PLAYER_DEAD" then
+        local _, instanceType = IsInInstance()
+        if instanceType == "pvp" or instanceType == "arena" then
+            return
+        end
+
         AIO.Handle(REVIVE_HANDLER_NAME, "RequestStatus")
         frame:Show()
     else

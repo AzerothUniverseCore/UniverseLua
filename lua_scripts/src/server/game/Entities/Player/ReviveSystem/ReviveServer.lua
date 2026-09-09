@@ -51,6 +51,12 @@ function ReviveHandlers.RequestRevive(player)
         return
     end
 
+    local ok, map = pcall(function() return player:GetMap() end)
+    if ok and map and (map:IsBattleground() or map:IsArena()) then
+        AIO.Handle(player, REVIVE_HANDLER_NAME, "ReviveResult", false, "BG_ARENA")
+        return
+    end
+
     local data = GetCharges(player:GetGUIDLow())
 
     if data.count <= 0 then
