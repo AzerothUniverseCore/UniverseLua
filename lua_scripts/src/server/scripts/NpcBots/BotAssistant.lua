@@ -131,9 +131,11 @@ local function OnPlayerChat(event, player, msg, Type, lang)
 
     lastReplyAt[guidLow] = now
 
+    local CHAT_MSG_WHISPER = 7
     local CHAT_MSG_MONSTER_SAY = 12
     local ok, err = pcall(function()
         closestBot:SendChatMessageToPlayer(CHAT_MSG_MONSTER_SAY, 0, answer, player)
+        closestBot:SendChatMessageToPlayer(CHAT_MSG_WHISPER, 0, answer, player)
     end)
     if not ok then
         print(string.format("[BotAssistant] Erreur envoi de reponse a %s : %s", player:GetName(), tostring(err)))
