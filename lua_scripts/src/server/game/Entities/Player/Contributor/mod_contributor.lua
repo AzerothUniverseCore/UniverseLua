@@ -2,30 +2,47 @@ require('sys_player_informations');
 
 local InstanceLevel = {};
 local contribMount = {49322};
+local CONTRIBUTOR_ACHIEVEMENT_ID = 5012
+
+local function GetCachedPlayerInfo(event, player)
+  local guidLow = player:GetGUIDLow()
+  if not playerInformations[guidLow] then
+    getInformations(event, player)
+  end
+  return playerInformations[guidLow]
+end
+
+function GrantContributorKit(player)
+  for _, mount in ipairs(contribMount) do
+    if not player:HasSpell(mount) then
+      player:LearnSpell(mount)
+      player:AddItem(9017, 1)
+      player:AddItem(90180, 1)
+      player:AddItem(90007, 1)
+      player:AddItem(200008, 1)
+      player:AddItem(23162, 4)
+      player:AddItem(900010, 1)
+      player:AddItem(900011, 1)
+      player:AddItem(10360, 1)
+      --player:AddItem(335808, 1)
+    end
+  end
+
+  if not player:HasAchieved(CONTRIBUTOR_ACHIEVEMENT_ID) then
+    player:SetAchievement(CONTRIBUTOR_ACHIEVEMENT_ID)
+  end
+end
 
 local function learnContribMount(event, player)
-  local playerInfo = playerInformations[player:GetGUIDLow()]
+  local playerInfo = GetCachedPlayerInfo(event, player)
   if playerInfo and playerInfo.rank == 1 then
-    for _, mount in ipairs(contribMount) do
-      if not player:HasSpell(mount) then
-        player:LearnSpell(mount)
-        player:AddItem(9017, 1)
-        player:AddItem(90180, 1)
-        player:AddItem(90007, 1)
-        player:AddItem(200008, 1)
-        player:AddItem(23162, 4)
-        player:AddItem(900010, 1)
-        player:AddItem(900011, 1)
-        player:AddItem(10360, 1)
-		--player:AddItem(335808, 1)
-      end
-    end
+    GrantContributorKit(player)
   end
 end
 RegisterPlayerEvent(3, learnContribMount)
 
 local function addContribGold(event, player, amount)
-  local playerInfo = playerInformations[player:GetGUIDLow()]
+  local playerInfo = GetCachedPlayerInfo(event, player)
   if playerInfo and playerInfo.rank == 1 then
     return amount * 1.50;
   end
@@ -33,7 +50,7 @@ end
 RegisterPlayerEvent(37, addContribGold)
 
 local function addContribBuff(event, player)
-  local playerInfo = playerInformations[player:GetGUIDLow()]
+  local playerInfo = GetCachedPlayerInfo(event, player)
   if playerInfo and playerInfo.rank == 1 then
     for _, value in pairs(InstanceLevel) do
       if player:GetMap():IsDungeon() or player:GetMap():IsRaid() then
@@ -69,7 +86,7 @@ end
 RegisterServerEvent(33, onServerStart)
 
 local function onCommand (event, player, command)
-  local playerInfo = playerInformations[player:GetGUIDLow()]
+  local playerInfo = GetCachedPlayerInfo(event, player)
   if playerInfo and playerInfo.rank == 1 and command == 'rush' then
     addContribBuff(event, player)
     return false;
