@@ -34,6 +34,7 @@ playerInformations = {};
     function saveInformations(event, player)
       CharDBQuery('UPDATE auc_eluna.mod_account_rank SET `rank` = '..playerInformations[player:GetGUIDLow()].rank..' WHERE accountID = '..player:GetAccountId()..';')
       CharDBQuery('UPDATE auc_eluna.mod_player_informations SET expRate = '..playerInformations[player:GetGUIDLow()].expRate..', isSesame = '..playerInformations[player:GetGUIDLow()].isSesame..' WHERE pGUID = '..player:GetGUIDLow()..';');
+      playerInformations[player:GetGUIDLow()] = nil;
     end
     RegisterPlayerEvent(4, saveInformations)
 
