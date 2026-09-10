@@ -16,19 +16,19 @@ function GrantContributorKit(player)
   for _, mount in ipairs(contribMount) do
     if not player:HasSpell(mount) then
       player:LearnSpell(mount)
-      player:AddItem(9017, 1)
-      player:AddItem(90180, 1)
-      player:AddItem(90007, 1)
-      player:AddItem(200008, 1)
-      player:AddItem(23162, 4)
-      player:AddItem(900010, 1)
-      player:AddItem(900011, 1)
-      player:AddItem(10360, 1)
-      --player:AddItem(335808, 1)
     end
   end
 
   if not player:HasAchieved(CONTRIBUTOR_ACHIEVEMENT_ID) then
+    player:AddItem(9017, 1)
+    player:AddItem(90180, 1)
+    player:AddItem(90007, 1)
+    player:AddItem(200008, 1)
+    player:AddItem(23162, 4)
+    player:AddItem(900010, 1)
+    player:AddItem(900011, 1)
+    player:AddItem(10360, 1)
+    --player:AddItem(335808, 1)
     player:SetAchievement(CONTRIBUTOR_ACHIEVEMENT_ID)
   end
 end
