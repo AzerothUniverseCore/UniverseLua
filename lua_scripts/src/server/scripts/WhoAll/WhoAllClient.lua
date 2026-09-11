@@ -151,14 +151,18 @@ end
 -- Frame
 -- ============================================================================
 
-local FRAME_W, FRAME_H = 400, 460
+local FRAME_W, FRAME_H = 1024, 512
 local ROW_HEIGHT = 18
-local NUM_ROWS = 17
+local NUM_ROWS = 15
 
-local COL_NAME_X, COL_NAME_W = 12, 150
-local COL_LEVEL_X, COL_LEVEL_W = 166, 34
-local COL_CLASS_X, COL_CLASS_W = 204, 82
-local COL_ZONE_X, COL_ZONE_W = 290, 86
+local CONTENT_LEFT = 470
+local CONTENT_RIGHT = 820
+local CONTENT_W = CONTENT_RIGHT - CONTENT_LEFT   -- 350
+
+local COL_NAME_X, COL_NAME_W = 0, 150
+local COL_LEVEL_X, COL_LEVEL_W = 156, 34
+local COL_CLASS_X, COL_CLASS_W = 196, 78
+local COL_ZONE_X, COL_ZONE_W = 280, 70
 
 local frame, rows, scrollFrame, searchBox, searchHint, countText
 
@@ -244,8 +248,8 @@ end
 
 local function CreateRow(parent, index)
     local row = CreateFrame("Button", nil, parent)
-    row:SetSize(FRAME_W - 24, ROW_HEIGHT)
-    row:SetPoint("TOPLEFT", 12, -((index - 1) * ROW_HEIGHT))
+    row:SetSize(CONTENT_W, ROW_HEIGHT)
+    row:SetPoint("TOPLEFT", 0, -((index - 1) * ROW_HEIGHT))
     row:RegisterForClicks("RightButtonUp")
     row:SetScript("OnClick", function(self, button)
         if button == "RightButton" then
@@ -261,28 +265,28 @@ local function CreateRow(parent, index)
     row.bg = bg
 
     local name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    name:SetPoint("LEFT", COL_NAME_X - 12, 0)
+    name:SetPoint("LEFT", COL_NAME_X, 0)
     name:SetWidth(COL_NAME_W - 6)
     name:SetJustifyH("LEFT")
     name:SetWordWrap(false)
     row.name = name
 
     local level = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    level:SetPoint("LEFT", COL_LEVEL_X - 12, 0)
+    level:SetPoint("LEFT", COL_LEVEL_X, 0)
     level:SetWidth(COL_LEVEL_W)
     level:SetJustifyH("CENTER")
     level:SetWordWrap(false)
     row.level = level
 
     local class = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    class:SetPoint("LEFT", COL_CLASS_X - 12, 0)
+    class:SetPoint("LEFT", COL_CLASS_X, 0)
     class:SetWidth(COL_CLASS_W - 6)
     class:SetJustifyH("LEFT")
     class:SetWordWrap(false)
     row.class = class
 
     local zone = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    zone:SetPoint("LEFT", COL_ZONE_X - 12, 0)
+    zone:SetPoint("LEFT", COL_ZONE_X, 0)
     zone:SetWidth(COL_ZONE_W - 4)
     zone:SetJustifyH("LEFT")
     zone:SetWordWrap(false)
@@ -304,25 +308,23 @@ local function CreateWhoAllFrame()
     frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
     frame:SetScript("OnMouseDown", function(self) self:Raise() end)
 
-    frame:SetBackdrop({
-        bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-        tile = true, tileSize = 32, edgeSize = 32,
-        insets = { left = 11, right = 12, top = 12, bottom = 11 },
-    })
+    local bg = frame:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints(frame)
+    bg:SetTexture("Interface\\WhoAll\\textures\\WhoAll_UI.blp")
+    frame.bg = bg
 
     local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOP", 0, -14)
+    title:SetPoint("TOP", frame, "TOPLEFT", CONTENT_LEFT + CONTENT_W / 2, -46)
     title:SetText(L.TITLE)
 
     local closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
-    closeButton:SetPoint("TOPRIGHT", -2, -2)
+    closeButton:SetPoint("TOPRIGHT", frame, "TOPLEFT", CONTENT_RIGHT + 45, -45)
     closeButton:SetScript("OnClick", function() frame:Hide() end)
 
     -- Search box (placeholder rendered INSIDE the box, standard convention, hidden while typing/focused)
     searchBox = CreateFrame("EditBox", "WhoAllSearchBox", frame, "InputBoxTemplate")
-    searchBox:SetSize(FRAME_W - 96, 20)
-    searchBox:SetPoint("TOP", 0, -40)
+    searchBox:SetSize(CONTENT_W - 16, 20)
+    searchBox:SetPoint("TOPLEFT", frame, "TOPLEFT", CONTENT_LEFT + 8, -73)
     searchBox:SetAutoFocus(false)
     searchBox:SetScript("OnTextChanged", function(self)
         searchText = self:GetText() or ""
@@ -341,26 +343,26 @@ local function CreateWhoAllFrame()
 
     -- Column headers
     local header = CreateFrame("Frame", nil, frame)
-    header:SetSize(FRAME_W - 24, 16)
-    header:SetPoint("TOP", 0, -70)
-    CreateHeaderButton(header, L.COL_NAME, COL_NAME_X - 12, COL_NAME_W, "name")
-    CreateHeaderButton(header, L.COL_LEVEL, COL_LEVEL_X - 12, COL_LEVEL_W, "level")
-    CreateHeaderButton(header, L.COL_CLASS, COL_CLASS_X - 12, COL_CLASS_W, "class")
-    CreateHeaderButton(header, L.COL_ZONE, COL_ZONE_X - 12, COL_ZONE_W, "zone")
+    header:SetSize(CONTENT_W, 16)
+    header:SetPoint("TOPLEFT", frame, "TOPLEFT", CONTENT_LEFT, -118)
+    CreateHeaderButton(header, L.COL_NAME, COL_NAME_X, COL_NAME_W, "name")
+    CreateHeaderButton(header, L.COL_LEVEL, COL_LEVEL_X, COL_LEVEL_W, "level")
+    CreateHeaderButton(header, L.COL_CLASS, COL_CLASS_X, COL_CLASS_W, "class")
+    CreateHeaderButton(header, L.COL_ZONE, COL_ZONE_X, COL_ZONE_W, "zone")
 
     local headerLine = frame:CreateTexture(nil, "ARTWORK")
     headerLine:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -3)
-    headerLine:SetSize(FRAME_W - 24, 1)
+    headerLine:SetSize(CONTENT_W, 1)
     headerLine:SetTexture(1, 0.82, 0, 0.6)
 
     -- Scroll list
     local listFrame = CreateFrame("Frame", nil, frame)
-    listFrame:SetPoint("TOPLEFT", 0, -92)
-    listFrame:SetSize(FRAME_W, NUM_ROWS * ROW_HEIGHT)
+    listFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", CONTENT_LEFT, -143)
+    listFrame:SetSize(CONTENT_W, NUM_ROWS * ROW_HEIGHT)
 
     scrollFrame = CreateFrame("ScrollFrame", "WhoAllScrollFrame", listFrame, "FauxScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", 0, 0)
-    scrollFrame:SetSize(FRAME_W - 24, NUM_ROWS * ROW_HEIGHT)
+    scrollFrame:SetSize(CONTENT_W, NUM_ROWS * ROW_HEIGHT)
     scrollFrame:SetScript("OnVerticalScroll", function(self, offset)
         FauxScrollFrame_OnVerticalScroll(self, offset, ROW_HEIGHT, UpdateList)
     end)
@@ -370,20 +372,20 @@ local function CreateWhoAllFrame()
         rows[i] = CreateRow(listFrame, i)
     end
 
-    -- Footer
+    -- Footer (reste dans la zone sombre, au-dessus du bord bas brule/transparent de l'illustration)
     local footerLine = frame:CreateTexture(nil, "ARTWORK")
-    footerLine:SetPoint("BOTTOMLEFT", 12, 40)
-    footerLine:SetSize(FRAME_W - 24, 1)
+    footerLine:SetPoint("TOPLEFT", frame, "TOPLEFT", CONTENT_LEFT, -446)
+    footerLine:SetSize(CONTENT_W, 1)
     footerLine:SetTexture(1, 1, 1, 0.15)
 
     countText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    countText:SetPoint("BOTTOMLEFT", 14, 16)
+    countText:SetPoint("TOPLEFT", frame, "TOPLEFT", CONTENT_LEFT + 2, -466)
     countText:SetText(L.LOADING)
     countText:SetWordWrap(false)
 
     local refreshButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
     refreshButton:SetSize(96, 22)
-    refreshButton:SetPoint("BOTTOMRIGHT", -14, 12)
+    refreshButton:SetPoint("TOPRIGHT", frame, "TOPLEFT", CONTENT_RIGHT, -450)
     refreshButton:SetText(L.REFRESH)
     refreshButton:SetScript("OnClick", function()
         AIO.Handle("WhoAllHandler", "Request")
