@@ -30,12 +30,6 @@ local T = {
 		[2] = { "|TInterface\\icons\\inv_flymaldraxxusmount_black:35|t Nerozias", 1,
 				{"|TInterface\\icons\\Achievement_BG_returnXflags_def_WSG.png:35|t Se téléporter", 726, -15705.7, -14232.7, 78.4658, 4.74821},
 				},
-		[3] = { "|TInterface\\icons\\achievement_zone_mount hyjal:35|t Mont Hyjal 1-80", 2,
-				{"|TInterface\\icons\\Achievement_BG_returnXflags_def_WSG.png:35|t Se téléporter", 1, 4619.39, -3847.96, 943.94, 1.12},
-				},
-		[4] = { "|TInterface\\icons\\achievement_zone_firelands:35|t Hyjal TDF 80", 2,
-				{"|TInterface\\icons\\Achievement_BG_returnXflags_def_WSG.png:35|t Se téléporter", 1, 4677.54, -3681.55, 697.771, 1.62796},
-				},
 }
 
 -- CODE STUFFS! DO NOT EDIT BELOW
