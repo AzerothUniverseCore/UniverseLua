@@ -18,8 +18,8 @@
 local ItemEntry = 90016
 
 local T = {
-    [1] = { "Wrath of the Lich King", 2,
-        {"Les Grisonnes", 571, 4194.916504, -3750.121094, 125.163925, 5.221105},
+    [1] = { "Légion", 2,
+        {"Vaisseau de la Légion", 781, -11800.8, 2931.67, 2745.98, 1.58106},
     },
 }
 
