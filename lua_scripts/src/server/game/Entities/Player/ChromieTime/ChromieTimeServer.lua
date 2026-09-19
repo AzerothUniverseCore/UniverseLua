@@ -1,13 +1,13 @@
 local AIO = AIO or require("AIO")
 
 local DESTINATIONS = {
-    { "Orgrimmar",                     1,   1517.55,     -4412.03,     21.7103,   0.243466, nameEn = "Orgrimmar",                          faction = "Horde",    requiredLevel = 1 },
-    { "Sanctuaire des Deux-Lunes",     754, 1678.38,     931.508,      471.425,   0.143189, nameEn = "Shrine of Two Moons",                faction = "Horde",    requiredLevel = 80 },
-    { "Hurlevent",                     0,   -8905,       560,          94,        0.62,     nameEn = "Stormwind",                          faction = "Alliance", requiredLevel = 1 },
-    { "Sanctuaire des Sept-Etoiles",   754, 821.866,     253.792,      503.92,    3.73811,  nameEn = "Shrine of Seven Stars",              faction = "Alliance", requiredLevel = 80 },
-    { "Dalaran",                       571, 5826,        470,          659,       1.4,      nameEn = "Dalaran",                                                  requiredLevel = 80 },
+    { "Orgrimmar",                     1,   1517.55,     -4412.03,     21.7103,   0.243466, nameEn = "Orgrimmar",                          faction = "Horde",    requiredLevel = 120 },
+    { "Sanctuaire des Deux-Lunes",     754, 1678.38,     931.508,      471.425,   0.143189, nameEn = "Shrine of Two Moons",                faction = "Horde",    requiredLevel = 120 },
+    { "Hurlevent",                     0,   -8905,       560,          94,        0.62,     nameEn = "Stormwind",                          faction = "Alliance", requiredLevel = 120 },
+    { "Sanctuaire des Sept-Etoiles",   754, 821.866,     253.792,      503.92,    3.73811,  nameEn = "Shrine of Seven Stars",              faction = "Alliance", requiredLevel = 120 },
+    { "Dalaran",                       571, 5826,        470,          659,       1.4,      nameEn = "Dalaran",                                                  requiredLevel = 120 },
     { "Dalaran (Legion)",   		   781, -11908.80,   2961.10,      1857.40,   5.04,     nameEn = "Dalaran (Legion)",                                         requiredLevel = 80 },
-    { "Les Ports Oubliés",  		   807, 11742.5,     11860.6,      -0.169944, 4.85993,  nameEn = "The Forgotten Reach",                                      requiredLevel = 10 },
+    { "Les Ports Oubliés",  		   807, 11742.5,     11860.6,      -0.169944, 4.85993,  nameEn = "The Forgotten Reach",                                      requiredLevel = 120 },
     { "Netheril",    		   		   725, -14749.907227,-13192.527344,34.431049,1.896851, nameEn = "Netheril",                                                 requiredLevel = 80 },
     { "Chemin du Rêve d'émeraude", 	   792, 1658.18,     1573.7,       5.84094,   2.46316,  nameEn = "Emerald Dreamway",                                	 	 requiredLevel = 80 },
 }

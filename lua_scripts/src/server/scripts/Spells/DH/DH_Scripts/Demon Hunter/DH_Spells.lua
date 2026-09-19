@@ -116,7 +116,7 @@ if contains(DemonHunter, player:GetClass())then
 for k = 1, #CoreSpells do
 player:LearnSpell(CoreSpells[k]) 
 --Start Level--
-player:SetLevel(70)
+-- player:SetLevel(70)
 player:LearnSpell(142790)
 player:ModifyMoney(50000)
 		end

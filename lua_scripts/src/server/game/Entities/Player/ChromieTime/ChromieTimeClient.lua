@@ -120,13 +120,13 @@ local IS_FR = (GetLocale() == "frFR")
 --  coordonnees envoyees par le client)
 ----------------------------------------------------------------
 local DESTINATIONS = {
-    { "Orgrimmar",                          nameEn = "Orgrimmar",                          faction = "Horde",    requiredLevel = 1 },
-    { "Sanctuaire des Deux-Lunes",          nameEn = "Shrine of Two Moons",                faction = "Horde",    requiredLevel = 80 },
-    { "Hurlevent",                          nameEn = "Stormwind",                          faction = "Alliance", requiredLevel = 1 },
-    { "Sanctuaire des Sept-Etoiles",        nameEn = "Shrine of Seven Stars",              faction = "Alliance", requiredLevel = 80 },
-    { "Dalaran",                            nameEn = "Dalaran",                                                  requiredLevel = 80 },
+    { "Orgrimmar",                          nameEn = "Orgrimmar",                          faction = "Horde",    requiredLevel = 120 },
+    { "Sanctuaire des Deux-Lunes",          nameEn = "Shrine of Two Moons",                faction = "Horde",    requiredLevel = 120 },
+    { "Hurlevent",                          nameEn = "Stormwind",                          faction = "Alliance", requiredLevel = 120 },
+    { "Sanctuaire des Sept-Etoiles",        nameEn = "Shrine of Seven Stars",              faction = "Alliance", requiredLevel = 120 },
+    { "Dalaran",                            nameEn = "Dalaran",                                                  requiredLevel = 120 },
     { "Dalaran (Legion)",        		    nameEn = "Dalaran (Legion)",                               			 requiredLevel = 80 },
-    { "Les Ports Oubliés",       			nameEn = "The Forgotten Reach",                          	 	   	 requiredLevel = 10, adventure = true },
+    { "Les Ports Oubliés",       			nameEn = "The Forgotten Reach",                          	 	   	 requiredLevel = 120, adventure = true },
     { "Netheril",         					nameEn = "Netheril",                              					 requiredLevel = 80, adventure = true },
     { "Chemin du Rêve d'émeraude",      	nameEn = "Emerald Dreamway",                            		     requiredLevel = 80 },
 }
