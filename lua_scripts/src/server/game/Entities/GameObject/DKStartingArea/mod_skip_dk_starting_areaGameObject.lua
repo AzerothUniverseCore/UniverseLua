@@ -10,6 +10,14 @@ local GM_Only = false         -- true: only allow game masters to skip
 local AnnounceZone = false     -- true: when player choose to skip, announce to other deathknights
                               --       who are in the dk starting zone
 
+local CatchUpExistingDK = true  -- true: on EVERY login (not just the character's first ever login),
+                                 --       silently run the full starter package (quests, gear,
+                                 --       hearthstone, Legion Ship teleport) for any DK who hasn't
+                                 --       completed it yet. Added for characters created via the
+                                 --       instant level 79/80 setup, who never spoke to the Lich
+                                 --       King NPC and are missing everything it grants (including
+                                 --       what unlocks the DK domain). Harmless no-op once caught up.
+
 ------------------------------------------------------------------------------------------------
 -- END CONFIG
 ------------------------------------------------------------------------------------------------
@@ -306,6 +314,19 @@ local function onFirstLogin(event, player)
     end
 end
 
+-- Catch-up for DK characters that already exist but never went through the
+-- Lich King portal (e.g. created directly at the instant level via the
+-- instant-80 setup). Runs on every regular login, not just the character's
+-- very first one, so it also reaches characters created before this was
+-- added. Quest 13166 (rewarded right before the final team split/teleport)
+-- is used as the "already has everything" marker; doQuest() is idempotent,
+-- so re-running the full chain on an already-caught-up player is a no-op.
+local function onLoginCatchUp(event, player)
+    if (player:GetClass() ~= 6) then return end
+    if (player:GetQuestStatus(13166) == QUEST_STATUS_REWARDED) then return end
+    skipDKStarter(player)
+end
+
 local function onSendCinematic(event, packet, player)
     if (packet:ReadULong() == 165) then 
         if (not GM_Only or player:GetGMRank() >= 1) then
@@ -321,6 +342,10 @@ RegisterGameObjectGossipEvent(NPC_LK, 2, onGossipSelect)
 if (AutoSkip) then
     RegisterPlayerEvent(30, onFirstLogin)
     RegisterPacketEvent(250, 7, onSendCinematic) -- PACKET_EVENT_ON_PACKET_SEND (SMSG_TRIGGER_CINEMATIC)
+end
+
+if (CatchUpExistingDK) then
+    RegisterPlayerEvent(3, onLoginCatchUp) -- PLAYER_EVENT_ON_LOGIN
 end
 
 if (AnnounceModule and not GM_Only) then
