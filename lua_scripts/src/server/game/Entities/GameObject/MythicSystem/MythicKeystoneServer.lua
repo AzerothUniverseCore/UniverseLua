@@ -215,13 +215,13 @@ MKS.Config = {
 				[122468]=true,
 				[122467]=true,
 				[121975]=true,
-				--[124828]=true,
-				--[126268]=true,
-				--[125886]=true,
-				--[126267]=true,
-				--[125885]=true,
-				--[125893]=true,
-				--[126266]=true,
+				[124828]=true,
+				[126268]=true,
+				[125886]=true,
+				[126267]=true,
+				[125885]=true,
+				[125893]=true,
+				[126266]=true,
             },
         },
     },
@@ -861,10 +861,12 @@ local function OnCreatureSpawn(event, creature)
 end
 
 -- ── Modificateur de dégâts appliqué à la volée ────────────────
--- Eluna 3.3.5 expose OnDamage (event 6) sur les créatures.
--- On l'enregistre globalement via RegisterCreatureEvent sur chaque
--- boss ; pour le trash on utilise un hook de map via
--- RegisterMapEvent si disponible, sinon on se limite aux boss.
+-- Enregistré via RegisterAllCreatureEvent (voir plus bas) : ce hook
+-- ne prend pas d'entry en paramètre, donc il ne touche jamais à l'IA
+-- assignée à la créature (contrairement à RegisterCreatureEvent qui,
+-- dès qu'un event est lié à une entry, fait remplacer l'IA CPP/SmartAI
+-- de cette entry par l'IA générique d'Eluna - c'est ce qui bloquait
+-- les scripts custom).
 local function OnCreatureDamage(event, creature, target, damage)
     local run = MKS.Runs[creature:GetInstanceId()]
     if not run or not run.dmgScaling then return damage end
@@ -880,6 +882,9 @@ end
 
 -- ─────────────────────────────────────────────────────────────
 -- MORT DE BOSS
+-- Déclenché via RegisterPlayerEvent (PLAYER_EVENT_ON_KILL_CREATURE),
+-- pas via RegisterCreatureEvent, pour la même raison que ci-dessus :
+-- ça ne touche pas à l'IA de la créature tuée.
 -- ─────────────────────────────────────────────────────────────
 local function OnCreatureDeath(event, creature, killer)
     local entry      = creature:GetEntry()
@@ -1239,16 +1244,18 @@ RegisterPlayerEvent(16, OnMapChange)
 RegisterPlayerEvent(17, OnMapLeave)
 RegisterPlayerEvent(42, OnPlayerCommand)
 
--- Enregistre dynamiquement tous les boss de tous les donjons
-for _, dungeon in pairs(MKS.Config.DUNGEONS) do
-    if dungeon.bosses then
-        for entry in pairs(dungeon.bosses) do
-            RegisterCreatureEvent(entry, 4, OnCreatureDeath)
-            RegisterCreatureEvent(entry, 3, OnCreatureSpawn)
-            RegisterCreatureEvent(entry, 6, OnCreatureDamage)
-        end
-    end
-end
+-- Scaling (spawn) et dégâts : hooks globaux (AllCreatureEvent), pas liés
+-- à une entry précise, donc aucune interférence avec l'IA (CPP ou
+-- SmartAI) des créatures des donjons custom. Le filtrage par boss se
+-- fait à l'intérieur des fonctions elles-mêmes (via IsBoss / run.dmgScaling).
+RegisterAllCreatureEvent(1, OnCreatureSpawn)   -- ALL_CREATURE_EVENT_ON_ADD
+RegisterAllCreatureEvent(7, OnCreatureDamage)  -- ALL_CREATURE_EVENT_ON_DAMAGE
+
+-- Comptage des kills de boss : hook sur le joueur (pas sur la créature),
+-- pour la même raison - ça ne touche jamais à l'IA du boss tué.
+RegisterPlayerEvent(7, function(event, killer, creature) -- PLAYER_EVENT_ON_KILL_CREATURE
+    OnCreatureDeath(event, creature, killer)
+end)
 
 CreateLuaEvent(TimerTick, 5000, 0)
 
