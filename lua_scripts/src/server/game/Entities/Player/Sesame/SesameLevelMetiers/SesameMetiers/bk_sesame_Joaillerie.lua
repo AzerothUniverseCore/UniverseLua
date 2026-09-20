@@ -42,7 +42,7 @@ local function onUseSesame(event, player, item, target)
       else
         player:SendNotification('')
       end
-      player:SetLevel(0)
+      player:SetLevel(pLevel)
     else
       player:SendNotification('')
       return false;
