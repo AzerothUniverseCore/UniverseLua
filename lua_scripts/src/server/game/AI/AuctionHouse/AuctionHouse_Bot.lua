@@ -1,7 +1,7 @@
 -- Credits Mithras & Niam5 for code functions --
 
 local auctionConfig = {
-    auctionWebhookURL = "https://discord.com/api/webhooks/1341951257186926695/TOKEN_BOT",
+    auctionWebhookURL = "WEBHOOK_URL_DISCORD",
     lastCheckedTimestamp = 0
 }
 
