@@ -259,10 +259,10 @@ local function skipDKStarter(player)
     -- done
     if (player:GetTeam() == 0) then
         doQuest(player, 13188) -- Where Kings Walk
-        player:Teleport(0, -8829.57, 625.959, 94.2431, 0.777257) -- Stormwind
+        player:Teleport(781, -11800.7, 2555.49, 2795.65, 4.69982) -- LegionShip
     else
         doQuest(player, 13189) -- Saurfang's Blessing
-        player:Teleport(1, 1517.55, -4412.03, 21.7103, 0.243466) -- Orgrimmar
+        player:Teleport(781, -11800.7, 2555.49, 2795.65, 4.69982) -- LegionShip
     end
 
     player:AddItem(6948) -- Hearthstone
