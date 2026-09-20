@@ -48,6 +48,34 @@ local RACE_DRAENEI            = 11
 local HORDE_ICON = "|TInterface\\TargetingFrame\\UI-PVP-HORDE:18:19:0:-2:64:64:0:38:0:36|t"
 local ALLIANCE_ICON = "|TInterface\\TargetingFrame\\UI-PVP-ALLIANCE:19:19:2:-2:64:64:0:38:0:38|t"
 
+-- ─────────────────────────────────────────────────────────────
+-- LOCALE DU JOUEUR (bilingue frFR / enUS, repli sur frFR)
+-- ─────────────────────────────────────────────────────────────
+local function GetPlayerLocale(player)
+    local ok, result = pcall(function()
+        local accountId = player:GetAccountId()
+        local q = AuthDBQuery("SELECT locale FROM account WHERE id = "..accountId..";")
+        if q then
+            local loc = q:GetUInt8(0)
+            if loc == 0 then return "enUS" end
+        end
+        return "frFR"
+    end)
+    if ok and result then return result end
+    return "frFR"
+end
+
+local GOSSIP_TEXT = {
+    enUS = {
+        TELEPORT_CAPITAL = "Teleport: Legion Ship",
+        CONFIRM_LEAVE_ZONE = "Are you sure you want to leave the area?",
+    },
+    frFR = {
+        TELEPORT_CAPITAL = "Téléportation : Vaisseau de la Légion",
+        CONFIRM_LEAVE_ZONE = "Êtes-vous sûr de vouloir quitter la zone ?",
+    },
+}
+
 local function doQuest(player, id)
     local reward = false
     if (player:GetQuestStatus(id) == QUEST_STATUS_FAILED) then
@@ -288,7 +316,8 @@ end
 local function onGossipHello(event, player, object)
     player:GossipAddQuests(object)
     if (not GM_Only or player:GetGMRank() >= 1) then
-        player:GossipMenuAddItem(0, "Téléportation : Capitale", 1, 1, false, "Êtes-vous sûr de vouloir quitter la zone ?")
+        local L = GOSSIP_TEXT[GetPlayerLocale(player)] or GOSSIP_TEXT.frFR
+        player:GossipMenuAddItem(0, L.TELEPORT_CAPITAL, 1, 1, false, L.CONFIRM_LEAVE_ZONE)
     end
     player:GossipSendMenu(1, object)
     return true
@@ -316,13 +345,21 @@ end
 
 -- Catch-up for DK characters that already exist but never went through the
 -- Lich King portal (e.g. created directly at the instant level via the
--- instant-80 setup). Runs on every regular login, not just the character's
--- very first one, so it also reaches characters created before this was
--- added. Quest 13166 (rewarded right before the final team split/teleport)
--- is used as the "already has everything" marker; doQuest() is idempotent,
--- so re-running the full chain on an already-caught-up player is a no-op.
+-- instant-80 setup). Runs on every regular login, so it also reaches
+-- characters created before this was added. Quest 13166 (rewarded right
+-- before the final team split/teleport) is used as the "already has
+-- everything" marker; doQuest() is idempotent, so re-running the full
+-- chain on an already-caught-up player is a no-op.
+--
+-- GetTotalPlayedTime() == 0 means this is the character's very first ever
+-- login (nothing played yet) - i.e. a brand new creation, not an existing
+-- character. Those must NOT be caught up here: a fresh DK is meant to spawn
+-- at the normal DK starting point, not get yanked straight to the Legion
+-- Ship. Only characters with prior play time (created before this system
+-- existed) get the catch-up.
 local function onLoginCatchUp(event, player)
     if (player:GetClass() ~= 6) then return end
+    if (player:GetTotalPlayedTime() <= 0) then return end
     if (player:GetQuestStatus(13166) == QUEST_STATUS_REWARDED) then return end
     skipDKStarter(player)
 end
