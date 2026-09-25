@@ -56,25 +56,25 @@ end
 
 --  Option Panel 
 local panel = CreateFrame("Frame", "LegendaryCloakTooltipOptionsPanel", InterfaceOptionsFramePanelContainer)
-panel.name = IS_FRENCH and "Ailes legendaires" or "Legendary Wings"
+panel.name = IS_FRENCH and "Ailes légendaires" or "Legendary Wings"
 
 local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
 title:SetPoint("TOPLEFT", 16, -16)
-title:SetText(IS_FRENCH and "Ailes legendaires" or "Legendary Wings")
+title:SetText(IS_FRENCH and "Ailes légendaires [M+FULL]" or "Legendary Wings [M+FULL]")
 
 local subtitle = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
 subtitle:SetWidth(500)
 subtitle:SetJustifyH("LEFT")
 subtitle:SetText(IS_FRENCH
-    and "Masque l'effet visuel des ailes legendaires."
+    and "Masque l'effet visuel des ailes légendaires."
     or "Hides the legendary wings' visual effect.")
 
 optionsCheckbox = CreateFrame("CheckButton", "LegendaryCloakTooltipOptionsCheckbox", panel, "InterfaceOptionsCheckButtonTemplate")
 optionsCheckbox:SetPoint("TOPLEFT", subtitle, "BOTTOMLEFT", -2, -16)
 _G[optionsCheckbox:GetName() .. "Text"]:SetText(IS_FRENCH
-    and "Masquer l'effet du sort"
-    or "Hide the spell's effect")
+    and "Masquer l’effet du sort de la cape"
+    or "Hide the effect of the cape's spell")
 
 optionsCheckbox:SetScript("OnClick", function(self)
     local checked = self:GetChecked() and true or false
@@ -100,7 +100,7 @@ SlashCmdList["LEGENDARYCLOAKTOOLTIP"] = function()
     local newState = not CurrentHideState
     AIO.Handle("h_legendarywings", "setState", newState and 1 or 0)
     if IS_FRENCH then
-        print("|cff4CFF00[Ailes legendaires]|r Effet du sort : " .. (newState and "|cffff0000masque|r" or "|cff00ff00affiche|r"))
+        print("|cff4CFF00[Ailes légendaires]|r Effet du sort : " .. (newState and "|cffff0000masque|r" or "|cff00ff00affiche|r"))
     else
         print("|cff4CFF00[Legendary Wings]|r Spell effect: " .. (newState and "|cffff0000hidden|r" or "|cff00ff00shown|r"))
     end
