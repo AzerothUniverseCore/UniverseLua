@@ -9,8 +9,8 @@ local LOCALES =
 {
     frFR = {
         TITLE          = "Tome des secrets gangrenés",
-        SHARD_LABEL    = "Éclat du gardien des pierres",
-        CRYSTAL_LABEL  = "Cristaux d'infusion",
+        SHARD_LABEL    = "Médaillon de la Légion",
+        CRYSTAL_LABEL  = "Éclat du gardien des pierres",
         STATUS_OBTAINED  = "|cff00ff00Déjà obtenu|r",
         STATUS_AVAILABLE = "|cffffd200Coût :|r",
         ERROR_COST     = "Monnaie insuffisante pour cet équipement légendaire.",
@@ -20,8 +20,8 @@ local LOCALES =
     },
     enUS = {
         TITLE          = "Tome of Fel Secrets",
-        SHARD_LABEL    = "Guardian's Stone Shard",
-        CRYSTAL_LABEL  = "Infusion Crystals",
+        SHARD_LABEL    = "Medallion of the Legion",
+        CRYSTAL_LABEL  = "Guardian's Stone Shard",
         STATUS_OBTAINED  = "|cff00ff00Already obtained|r",
         STATUS_AVAILABLE = "|cffffd200Cost:|r",
         ERROR_COST     = "Not enough currency for this legendary item.",
@@ -78,9 +78,53 @@ local SLOTS =
 
 local QUESTIONMARK_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 
-local function GetIconForItem(itemId)
-    local _, _, _, _, _, _, _, _, _, texture = GetItemInfo(itemId)
-    return texture or QUESTIONMARK_ICON
+local HARDCODED_ICONS = {
+    [200015]  = "Interface\\Icons\\inv_cape_pandaria_cranehealer_d_02",
+    [200016]  = "Interface\\Icons\\inv_cape_pandaria_dragoncaster_d_02",
+    [200017]  = "Interface\\Icons\\inv_cape_pandaria_oxtank_d_02",
+    [200018]  = "Interface\\Icons\\inv_cape_pandaria_tigermelee_d_02",
+
+    [8850542] = "Interface\\Icons\\inv_60legendary_ring1a", -- Khadgar
+    [8850543] = "Interface\\Icons\\inv_60legendary_ring1c", -- Garrosh Hurlenfer
+    [8850544] = "Interface\\Icons\\inv_60legendary_ring1e", -- Rexxar
+    [8850545] = "Interface\\Icons\\inv_60legendary_ring1b", -- Tirion Fordring
+
+    [43228]   = "Interface\\Icons\\INV_Misc_Platnumdisks", -- Stone Keeper's Shard
+    [128315]  = "Interface\\Icons\\spell_shadow_demoniccircleteleport", -- Legion Medal
+}
+
+local PENDING_ICONS = {}
+
+local RefreshAllIcons
+
+local function ApplyItemIcon(texture, itemId)
+    local hardcoded = HARDCODED_ICONS[itemId]
+    if hardcoded then
+        texture:SetTexture(hardcoded)
+        PENDING_ICONS[itemId] = nil
+        return
+    end
+
+    local _, _, _, _, _, _, _, _, _, tex = GetItemInfo(itemId)
+    if tex then
+        texture:SetTexture(tex)
+        PENDING_ICONS[itemId] = nil
+        return
+    end
+
+    texture:SetTexture(QUESTIONMARK_ICON)
+    PENDING_ICONS[itemId] = true
+
+    if Item and Item.CreateFromItemID then
+        local item = Item:CreateFromItemID(itemId)
+        item:ContinueOnItemLoad(function()
+            local _, _, _, _, _, _, _, _, _, tex2 = GetItemInfo(itemId)
+            if tex2 then
+                texture:SetTexture(tex2)
+                PENDING_ICONS[itemId] = nil
+            end
+        end)
+    end
 end
 
 local BOTTOM_EXTRA = 72
@@ -214,7 +258,7 @@ local function CreateItemSlot(slot)
     icon:SetPoint("CENTER")
     icon:SetSize(ICON_SIZE, ICON_SIZE)
     icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    icon:SetTexture(GetIconForItem(itemId))
+    ApplyItemIcon(icon, itemId)
     button.icon = icon
 
     local ring = button:CreateTexture(nil, "OVERLAY")
@@ -248,12 +292,21 @@ for _, slot in ipairs(SLOTS) do
 end
 
 local pulseElapsed = 0
+local iconRetryElapsed = 0
 TomeFelSecretsFrame:SetScript("OnUpdate", function(self, elapsed)
     pulseElapsed = pulseElapsed + elapsed
     for _, button in pairs(self.buttons) do
         local data = self.data[button.itemId]
         if not data or not data.obtained then
             button.ring:SetAlpha(0.78 + 0.22 * math.sin(pulseElapsed * 2 + button.pulsePhase))
+        end
+    end
+
+    if next(PENDING_ICONS) then
+        iconRetryElapsed = iconRetryElapsed + elapsed
+        if iconRetryElapsed >= 1 then
+            iconRetryElapsed = 0
+            RefreshAllIcons()
         end
     end
 end)
@@ -267,8 +320,8 @@ local function RefreshCurrencyText()
     local shardColor = (c.shardCount or 0) >= (c.shardCost or 0) and "|cff00ff00" or "|cffff2020"
     local crystalColor = (c.crystalCount or 0) >= (c.crystalCost or 0) and "|cff00ff00" or "|cffff2020"
 
-    if c.shardEntry then currencyShardIcon:SetTexture(GetIconForItem(c.shardEntry)) end
-    if c.crystalEntry then currencyCrystalIcon:SetTexture(GetIconForItem(c.crystalEntry)) end
+    if c.shardEntry then ApplyItemIcon(currencyShardIcon, c.shardEntry) end
+    if c.crystalEntry then ApplyItemIcon(currencyCrystalIcon, c.crystalEntry) end
 
     currencyShardText:SetText(string.format("%s%d / %d|r", shardColor, c.shardCount or 0, c.shardCost or 0))
     currencyCrystalText:SetText(string.format("%s%d / %d|r", crystalColor, c.crystalCount or 0, c.crystalCost or 0))
@@ -282,7 +335,7 @@ local function PopulateFrame(items, currency)
 
         local button = TomeFelSecretsFrame.buttons[item.id]
         if button then
-            button.icon:SetTexture(GetIconForItem(item.id))
+            ApplyItemIcon(button.icon, item.id)
             if item.obtained then
                 button.icon:SetDesaturated(true)
                 button.ring:SetVertexColor(0.5, 0.5, 0.5)
@@ -299,22 +352,23 @@ local function PopulateFrame(items, currency)
     RefreshCurrencyText()
 end
 
-local function RefreshAllIcons()
+-- (ré)assigne la variable declaree plus haut, avant le OnUpdate qui l'utilise
+RefreshAllIcons = function()
     for itemId, button in pairs(TomeFelSecretsFrame.buttons) do
-        button.icon:SetTexture(GetIconForItem(itemId))
+        ApplyItemIcon(button.icon, itemId)
     end
     if TomeFelSecretsFrame.currency.shardEntry then
-        currencyShardIcon:SetTexture(GetIconForItem(TomeFelSecretsFrame.currency.shardEntry))
+        ApplyItemIcon(currencyShardIcon, TomeFelSecretsFrame.currency.shardEntry)
     end
     if TomeFelSecretsFrame.currency.crystalEntry then
-        currencyCrystalIcon:SetTexture(GetIconForItem(TomeFelSecretsFrame.currency.crystalEntry))
+        ApplyItemIcon(currencyCrystalIcon, TomeFelSecretsFrame.currency.crystalEntry)
     end
 end
 
 local iconWatcher = CreateFrame("Frame")
 iconWatcher:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 iconWatcher:SetScript("OnEvent", function(self, event, itemId, success)
-    if success and TomeFelSecretsFrame:IsShown() then
+    if success then
         RefreshAllIcons()
     end
 end)
