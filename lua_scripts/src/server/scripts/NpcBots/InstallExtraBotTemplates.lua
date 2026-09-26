@@ -4122,7 +4122,7 @@ local function InstallExtraBotTemplates()
                 "`ItemID3`, `VerifiedBuild`) VALUES " .. batch)
         end
 
-        print("[InstallExtraBotTemplates] 1000 nouveaux templates de bots installes (entries 70596-71630, 35 IDs deja pris ignores, dont equipement clone pour chacun).")
+        --print("[InstallExtraBotTemplates] 1000 nouveaux templates de bots installes (entries 70596-71630, 35 IDs deja pris ignores, dont equipement clone pour chacun).")
     end)
 
     if not ok then
