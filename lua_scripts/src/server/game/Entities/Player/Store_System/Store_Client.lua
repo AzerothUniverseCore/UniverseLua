@@ -1208,7 +1208,7 @@ local function ModifyGameMenuFrame()
 	
 	-- add store button to the game menu
 	local storeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate");
-	storeButton:SetPoint("CENTER", frame, 0, 100)
+	storeButton:SetPoint("CENTER", frame, 0, 110)
 	storeButton:SetSize(144, 21)
 	storeButton.Text = storeButton:CreateFontString()
 	storeButton.Text:SetFont("Fonts\\FRIZQT__.TTF", 13, "OUTLINE")
